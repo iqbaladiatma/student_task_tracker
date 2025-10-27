@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/task_controller.dart';
 import '../model/task.dart';
+import '../utils/accessibility_utils.dart';
 
 /// Widget untuk menampilkan filter chips untuk memfilter tugas
 /// Menyediakan filter berdasarkan status (All, Pending, Completed, Overdue)
 /// dengan animasi smooth dan active state indication
+/// Performance optimized with efficient rebuilds and const constructors
 class FilterChips extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final double? spacing;
@@ -17,59 +19,97 @@ class FilterChips extends StatelessWidget {
     final taskController = Get.find<TaskController>();
 
     return Obx(() {
+      // Performance optimization: Cache filter values to avoid repeated calculations
+      final currentFilter = taskController.currentFilter;
+
       return Container(
         padding:
             padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: TaskFilter.values.map((filter) {
-              final isSelected = taskController.currentFilter == filter;
-              final count = _getFilterCount(taskController, filter);
+        child: Semantics(
+          label: 'Filter tugas',
+          hint: 'Pilih filter untuk menampilkan tugas berdasarkan status',
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            // Performance optimization: Add physics for better scrolling
+            physics: const BouncingScrollPhysics(),
+            child: Row(
+              children: TaskFilter.values.map((filter) {
+                final isSelected = currentFilter == filter;
+                final count = _getFilterCount(taskController, filter);
+                final semanticLabel = AccessibilityUtils.getFilterChipSemantics(
+                  filterName: _getFilterName(filter),
+                  count: count,
+                  isSelected: isSelected,
+                );
 
-              return Padding(
-                padding: EdgeInsets.only(right: spacing ?? 8),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  curve: Curves.easeInOut,
-                  child: FilterChip(
-                    label: _buildChipLabel(filter, count),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) {
+                return Padding(
+                  padding: EdgeInsets.only(right: spacing ?? 8),
+                  child: AccessibilityUtils.ensureMinTouchTarget(
+                    child: Semantics(
+                      button: true,
+                      label: semanticLabel,
+                      selected: isSelected,
+                      onTap: () {
                         taskController.setFilter(filter);
-                      }
-                    },
-                    backgroundColor: _getBackgroundColor(filter, false),
-                    selectedColor: _getBackgroundColor(filter, true),
-                    checkmarkColor: _getCheckmarkColor(filter),
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? _getSelectedTextColor(filter)
-                          : _getUnselectedTextColor(filter),
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                      fontSize: 13,
+                        AccessibilityUtils.announceMessage(
+                          'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
+                        );
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        child: FilterChip(
+                          label: _buildChipLabel(filter, count),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              taskController.setFilter(filter);
+                              AccessibilityUtils.announceMessage(
+                                'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
+                              );
+                            }
+                          },
+                          backgroundColor: _getBackgroundColor(filter, false),
+                          selectedColor: _getBackgroundColor(filter, true),
+                          checkmarkColor: _getCheckmarkColor(filter),
+                          labelStyle: TextStyle(
+                            color: isSelected
+                                ? _getSelectedTextColor(filter)
+                                : _getUnselectedTextColor(filter),
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            fontSize:
+                                14, // Slightly larger for better readability
+                            height: 1.2,
+                          ),
+                          side: BorderSide(
+                            color: isSelected
+                                ? _getBorderColor(filter, true)
+                                : _getBorderColor(filter, false),
+                            width: isSelected
+                                ? 2.5
+                                : 1.5, // Thicker borders for better visibility
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          elevation: isSelected ? 3 : 1,
+                          pressElevation: 6,
+                          materialTapTargetSize: MaterialTapTargetSize.padded,
+                          visualDensity: VisualDensity.standard,
+                          showCheckmark: false, // Menggunakan styling custom
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
                     ),
-                    side: BorderSide(
-                      color: isSelected
-                          ? _getBorderColor(filter, true)
-                          : _getBorderColor(filter, false),
-                      width: isSelected ? 2 : 1,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: isSelected ? 2 : 0,
-                    pressElevation: 4,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                    showCheckmark: false, // Menggunakan styling custom
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              }).toList(),
+            ),
           ),
         ),
       );
@@ -78,31 +118,42 @@ class FilterChips extends StatelessWidget {
 
   /// Build label untuk chip dengan nama filter dan count
   Widget _buildChipLabel(TaskFilter filter, int count) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(_getFilterIcon(filter), size: 16),
-        const SizedBox(width: 4),
-        Text(_getFilterName(filter)),
-        if (count > 0) ...[
-          const SizedBox(width: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              count.toString(),
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+    return AccessibilityUtils.excludeSemantics(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getFilterIcon(filter),
+            size: 18, // Slightly larger icon
+            semanticLabel: _getFilterName(filter),
+          ),
+          const SizedBox(width: 6),
+          Text(_getFilterName(filter), style: const TextStyle(height: 1.2)),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                count.toString(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                  height: 1.0,
+                ),
               ),
             ),
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 
@@ -153,7 +204,9 @@ class FilterChips extends StatelessWidget {
     final baseColor = _getFilterBaseColor(filter);
 
     if (isSelected) {
-      return baseColor.withOpacity(0.2);
+      return baseColor.withValues(
+        alpha: 0.25,
+      ); // Slightly more opaque for better contrast
     } else {
       return Colors.grey[100]!;
     }
@@ -297,7 +350,7 @@ class VerticalFilterChips extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? filter.color.withOpacity(0.1)
+                            ? filter.color.withValues(alpha: 0.1)
                             : Colors.transparent,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(

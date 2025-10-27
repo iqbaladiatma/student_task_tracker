@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:get/get.dart';
 import '../controllers/task_controller.dart';
 import '../routes/app_routes.dart';
+import '../utils/accessibility_utils.dart';
+import '../utils/performance_utils.dart';
 import '../widgets/filter_chips.dart';
 import '../widgets/task_card.dart';
 
@@ -18,6 +22,20 @@ class _HomeViewState extends State<HomeView> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
+  // Performance optimization: Debounced search
+  Timer? _searchDebounceTimer;
+
+  // Focus nodes untuk accessibility navigation
+  final FocusNode _searchFocusNode = AccessibilityUtils.createFocusNode(
+    debugLabel: 'Search Field',
+  );
+  final FocusNode _refreshButtonFocusNode = AccessibilityUtils.createFocusNode(
+    debugLabel: 'Refresh Button',
+  );
+  final FocusNode _fabFocusNode = AccessibilityUtils.createFocusNode(
+    debugLabel: 'Add Task FAB',
+  );
+
   @override
   void initState() {
     super.initState();
@@ -26,11 +44,33 @@ class _HomeViewState extends State<HomeView> {
       // Controller akan di-register di main.dart atau binding
       // Ini adalah fallback jika controller belum di-register
     }
+
+    // Announce screen load untuk screen readers
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AccessibilityUtils.announceMessage('Halaman daftar tugas dimuat');
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data ketika kembali ke halaman ini
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (Get.isRegistered<TaskController>()) {
+        final taskController = Get.find<TaskController>();
+        taskController.refresh();
+      }
+    });
   }
 
   @override
   void dispose() {
+    // Performance optimization: Cancel debounce timer
+    _searchDebounceTimer?.cancel();
     _searchController.dispose();
+    _searchFocusNode.dispose();
+    _refreshButtonFocusNode.dispose();
+    _fabFocusNode.dispose();
     super.dispose();
   }
 
@@ -40,14 +80,26 @@ class _HomeViewState extends State<HomeView> {
 
     return Scaffold(
       appBar: _buildAppBar(taskController),
-      body: Column(
-        children: [
-          // Filter chips
-          const FilterChips(),
+      body: AccessibilityUtils.createSemanticWidget(
+        label: 'Daftar tugas utama',
+        child: Column(
+          children: [
+            // Filter chips dengan semantic label
+            AccessibilityUtils.createSemanticWidget(
+              label: 'Filter tugas',
+              hint: 'Pilih filter untuk menampilkan tugas berdasarkan status',
+              child: const FilterChips(),
+            ),
 
-          // Task list
-          Expanded(child: _buildTaskList(taskController)),
-        ],
+            // Task list dengan semantic label
+            Expanded(
+              child: AccessibilityUtils.createSemanticWidget(
+                label: 'Daftar tugas',
+                child: _buildTaskList(taskController),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: _buildFloatingActionButton(),
     );
@@ -60,16 +112,39 @@ class _HomeViewState extends State<HomeView> {
       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       elevation: 2,
       actions: [
-        // Search toggle button
-        IconButton(
-          icon: Icon(_isSearching ? Icons.close : Icons.search),
-          onPressed: () => _toggleSearch(controller),
+        // Search toggle button dengan accessibility
+        AccessibilityUtils.ensureMinTouchTarget(
+          child: Semantics(
+            button: true,
+            label: _isSearching
+                ? AccessibilityUtils.closeSearchLabel
+                : AccessibilityUtils.searchButtonLabel,
+            hint: _isSearching
+                ? 'Tutup pencarian dan kembali ke daftar tugas'
+                : 'Buka pencarian untuk mencari tugas',
+            onTap: () => _toggleSearch(controller),
+            child: IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: () => _toggleSearch(controller),
+              iconSize: 28,
+            ),
+          ),
         ),
 
-        // Refresh button
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () => controller.refresh(),
+        // Refresh button dengan accessibility
+        AccessibilityUtils.ensureMinTouchTarget(
+          child: Semantics(
+            button: true,
+            label: AccessibilityUtils.refreshButtonLabel,
+            hint: 'Muat ulang daftar tugas dari penyimpanan',
+            onTap: () => controller.refresh(),
+            child: IconButton(
+              focusNode: _refreshButtonFocusNode,
+              icon: const Icon(Icons.refresh),
+              onPressed: () => controller.refresh(),
+              iconSize: 28,
+            ),
+          ),
         ),
       ],
     );
@@ -77,24 +152,63 @@ class _HomeViewState extends State<HomeView> {
 
   /// Build title untuk AppBar
   Widget _buildTitle() {
-    return const Text(
-      'Student Task Tracker',
-      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+    return AccessibilityUtils.createSemanticWidget(
+      header: true,
+      label: 'Student Task Tracker - Aplikasi Pencatat Tugas',
+      child: const Text(
+        'Student Task Tracker',
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+      ),
     );
   }
 
   /// Build search field untuk AppBar
   Widget _buildSearchField(TaskController controller) {
-    return TextField(
-      controller: _searchController,
-      autofocus: true,
-      decoration: const InputDecoration(
-        hintText: 'Cari tugas...',
-        border: InputBorder.none,
-        hintStyle: TextStyle(color: Colors.white70),
+    return Semantics(
+      textField: true,
+      label: 'Pencarian tugas',
+      hint:
+          'Ketik untuk mencari tugas berdasarkan judul, deskripsi, atau mata pelajaran',
+      value: _searchController.text,
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'Cari tugas...',
+          border: InputBorder.none,
+          hintStyle: TextStyle(color: Colors.white70),
+        ),
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+        onChanged: (query) {
+          // Performance optimization: Debounced search
+          _searchDebounceTimer?.cancel();
+          _searchDebounceTimer = Timer(
+            PerformanceUtils.searchDebounceDelay,
+            () {
+              controller.searchTasks(query);
+              // Announce search results untuk screen readers
+              if (query.isNotEmpty) {
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  final resultCount = controller.filteredTasks.length;
+                  AccessibilityUtils.announceMessage(
+                    'Ditemukan $resultCount tugas untuk pencarian "$query"',
+                  );
+                });
+              }
+            },
+          );
+        },
+        textInputAction: TextInputAction.search,
+        onSubmitted: (query) {
+          // Performance optimization: Immediate search on submit
+          _performImmediateSearch(query);
+          final resultCount = controller.filteredTasks.length;
+          AccessibilityUtils.announceMessage(
+            'Pencarian selesai. Ditemukan $resultCount tugas',
+          );
+        },
       ),
-      style: const TextStyle(color: Colors.white),
-      onChanged: (query) => controller.searchTasks(query),
     );
   }
 
@@ -123,17 +237,22 @@ class _HomeViewState extends State<HomeView> {
 
   /// Build loading state
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text(
-            'Memuat tugas...',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ],
+    return Center(
+      child: Semantics(
+        label: AccessibilityUtils.getLoadingSemantics('memuat daftar tugas'),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(semanticsLabel: 'Sedang memuat'),
+            const SizedBox(height: 16),
+            Text(
+              'Memuat tugas...',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -143,35 +262,63 @@ class _HomeViewState extends State<HomeView> {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              'Terjadi Kesalahan',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+        child: Semantics(
+          label: AccessibilityUtils.getErrorSemantics(
+            title: 'Terjadi Kesalahan',
+            message: controller.errorMessage,
+            actionLabel: 'Tekan tombol Coba Lagi',
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Colors.red[300],
+                semanticLabel: 'Ikon error',
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              controller.errorMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                controller.clearError();
-                controller.refresh();
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Coba Lagi'),
-            ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                'Terjadi Kesalahan',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Colors.red[700],
+                  fontWeight: FontWeight.w600,
+                ),
+              ).asSemanticHeader(label: 'Terjadi Kesalahan'),
+              const SizedBox(height: 8),
+              Text(
+                controller.errorMessage,
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              AccessibilityUtils.ensureMinTouchTarget(
+                child:
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        controller.clearError();
+                        controller.refresh();
+                        AccessibilityUtils.announceMessage(
+                          'Mencoba memuat ulang daftar tugas',
+                        );
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Coba Lagi'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                      ),
+                    ).asSemanticButton(
+                      label: 'Coba Lagi',
+                      hint: 'Muat ulang daftar tugas setelah error',
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -181,60 +328,111 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildEmptyState(TaskController controller) {
     final isSearching = controller.searchQuery.isNotEmpty;
     final hasFilter = controller.currentFilter != TaskFilter.all;
+    final title = _getEmptyStateTitle(isSearching, hasFilter);
+    final subtitle = _getEmptyStateSubtitle(isSearching, hasFilter);
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isSearching ? Icons.search_off : Icons.assignment_outlined,
-              size: 64,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _getEmptyStateTitle(isSearching, hasFilter),
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+        child: Semantics(
+          label: AccessibilityUtils.getEmptyStateSemantics(
+            title: title,
+            subtitle: subtitle,
+            actionLabel: !isSearching && !hasFilter
+                ? 'Tekan tombol Tambah Tugas Pertama'
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSearching ? Icons.search_off : Icons.assignment_outlined,
+                size: 64,
+                color: Colors.grey[400],
+                semanticLabel: isSearching
+                    ? 'Tidak ada hasil pencarian'
+                    : 'Tidak ada tugas',
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _getEmptyStateSubtitle(isSearching, hasFilter),
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            if (!isSearching && !hasFilter) ...[
-              ElevatedButton.icon(
-                onPressed: () => _navigateToAddTask(),
-                icon: const Icon(Icons.add),
-                label: const Text('Tambah Tugas Pertama'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w600,
                 ),
+              ).asSemanticHeader(label: title),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
-            ] else if (isSearching) ...[
-              TextButton.icon(
-                onPressed: () => _clearSearch(controller),
-                icon: const Icon(Icons.clear),
-                label: const Text('Hapus Pencarian'),
-              ),
-            ] else if (hasFilter) ...[
-              TextButton.icon(
-                onPressed: () => controller.setFilter(TaskFilter.all),
-                icon: const Icon(Icons.clear_all),
-                label: const Text('Hapus Filter'),
-              ),
+              const SizedBox(height: 24),
+              if (!isSearching && !hasFilter) ...[
+                AccessibilityUtils.ensureMinTouchTarget(
+                  child:
+                      ElevatedButton.icon(
+                        onPressed: () => _navigateToAddTask(),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Tambah Tugas Pertama'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                        ),
+                      ).asSemanticButton(
+                        label: 'Tambah Tugas Pertama',
+                        hint: 'Buat tugas pertama Anda untuk memulai',
+                      ),
+                ),
+              ] else if (isSearching) ...[
+                AccessibilityUtils.ensureMinTouchTarget(
+                  child:
+                      TextButton.icon(
+                        onPressed: () => _clearSearch(controller),
+                        icon: const Icon(Icons.clear),
+                        label: const Text('Hapus Pencarian'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                        ),
+                      ).asSemanticButton(
+                        label: 'Hapus Pencarian',
+                        hint:
+                            'Hapus kata kunci pencarian dan tampilkan semua tugas',
+                      ),
+                ),
+              ] else if (hasFilter) ...[
+                AccessibilityUtils.ensureMinTouchTarget(
+                  child:
+                      TextButton.icon(
+                        onPressed: () {
+                          controller.setFilter(TaskFilter.all);
+                          AccessibilityUtils.announceMessage(
+                            'Filter dihapus, menampilkan semua tugas',
+                          );
+                        },
+                        icon: const Icon(Icons.clear_all),
+                        label: const Text('Hapus Filter'),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
+                          ),
+                        ),
+                      ).asSemanticButton(
+                        label: 'Hapus Filter',
+                        hint: 'Hapus filter dan tampilkan semua tugas',
+                      ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -242,30 +440,60 @@ class _HomeViewState extends State<HomeView> {
 
   /// Build ListView untuk menampilkan daftar tugas
   Widget _buildTaskListView(TaskController controller) {
-    return RefreshIndicator(
-      onRefresh: () => controller.refresh(),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80), // Space for FAB
-        itemCount: controller.filteredTasks.length,
-        itemBuilder: (context, index) {
-          final task = controller.filteredTasks[index];
-          return TaskCard(
-            task: task,
-            onTap: () => _navigateToEditTask(task.id),
-            onEdit: () => _navigateToEditTask(task.id),
-            onDelete: () => _deleteTask(controller, task.id),
+    return Semantics(
+      label: 'Daftar ${controller.filteredTasks.length} tugas',
+      hint: 'Geser ke bawah untuk muat ulang, ketuk tugas untuk edit',
+      child: RefreshIndicator(
+        onRefresh: () async {
+          AccessibilityUtils.announceMessage('Memuat ulang daftar tugas');
+          await controller.refresh();
+          AccessibilityUtils.announceMessage(
+            'Daftar tugas berhasil dimuat ulang',
           );
         },
+        child: ListView.builder(
+          padding: const EdgeInsets.only(bottom: 80), // Space for FAB
+          itemCount: controller.filteredTasks.length,
+          // Performance optimization: Set estimated item extent for better scrolling
+          itemExtent: PerformanceUtils.listItemExtent,
+          // Performance optimization: Cache extent for smoother scrolling
+          cacheExtent: PerformanceUtils.listCacheExtent,
+          itemBuilder: (context, index) {
+            final task = controller.filteredTasks[index];
+            return Semantics(
+              sortKey: OrdinalSortKey(index.toDouble()),
+              child: TaskCard(
+                task: task,
+                onTap: () => _navigateToEditTask(task.id),
+                onEdit: () => _navigateToEditTask(task.id),
+                onDelete: () => _deleteTask(controller, task.id),
+              ),
+            );
+          },
+          // Accessibility improvements untuk ListView
+          semanticChildCount: controller.filteredTasks.length,
+          // Performance optimization: Add physics for better scrolling
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+        ),
       ),
     );
   }
 
   /// Build FloatingActionButton untuk menambah tugas
   Widget _buildFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: _navigateToAddTask,
-      tooltip: 'Tambah Tugas',
-      child: const Icon(Icons.add),
+    return Semantics(
+      button: true,
+      label: AccessibilityUtils.addTaskButtonLabel,
+      hint: 'Buka form untuk menambah tugas baru',
+      onTap: _navigateToAddTask,
+      child: FloatingActionButton(
+        focusNode: _fabFocusNode,
+        onPressed: _navigateToAddTask,
+        tooltip: AccessibilityUtils.addTaskButtonLabel,
+        child: const Icon(Icons.add, size: 28, semanticLabel: 'Tambah'),
+      ),
     );
   }
 
@@ -276,18 +504,39 @@ class _HomeViewState extends State<HomeView> {
       if (!_isSearching) {
         _searchController.clear();
         controller.clearSearch();
+        AccessibilityUtils.announceMessage('Pencarian ditutup');
+        // Return focus to refresh button
+        _refreshButtonFocusNode.requestFocus();
+      } else {
+        AccessibilityUtils.announceMessage('Mode pencarian dibuka');
+        // Focus on search field
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _searchFocusNode.requestFocus();
+        });
       }
     });
   }
 
+  /// Performance optimization: Immediate search (for submit)
+  void _performImmediateSearch(String query) {
+    _searchDebounceTimer?.cancel();
+    final taskController = Get.find<TaskController>();
+    taskController.searchTasks(query);
+  }
+
   /// Clear search
   void _clearSearch(TaskController controller) {
+    _searchDebounceTimer?.cancel();
     _searchController.clear();
     controller.clearSearch();
+    AccessibilityUtils.announceMessage(
+      'Pencarian dihapus, menampilkan semua tugas',
+    );
   }
 
   /// Navigate to add task screen
   void _navigateToAddTask() {
+    AccessibilityUtils.announceMessage('Membuka form tambah tugas');
     Get.toNamed(AppRoutes.addTask);
   }
 
@@ -297,13 +546,12 @@ class _HomeViewState extends State<HomeView> {
     final task = taskController.getTaskById(taskId);
 
     if (task != null) {
-      Get.toNamed(AppRoutes.editTask, arguments: task)?.then((result) {
-        // Refresh task list if edit was successful
-        if (result == true) {
-          taskController.refresh();
-        }
-      });
+      AccessibilityUtils.announceMessage(
+        'Membuka form edit tugas ${task.title}',
+      );
+      Get.toNamed(AppRoutes.editTask, arguments: task);
     } else {
+      AccessibilityUtils.announceMessage('Error: Tugas tidak ditemukan');
       Get.snackbar(
         'Error',
         'Tugas tidak ditemukan',
@@ -316,8 +564,14 @@ class _HomeViewState extends State<HomeView> {
 
   /// Delete task with confirmation
   Future<void> _deleteTask(TaskController controller, String taskId) async {
+    final task = controller.getTaskById(taskId);
+    final taskTitle = task?.title ?? 'tugas';
+
+    AccessibilityUtils.announceMessage('Menghapus tugas $taskTitle');
     final success = await controller.deleteTask(taskId);
+
     if (success) {
+      AccessibilityUtils.announceMessage('Tugas $taskTitle berhasil dihapus');
       Get.snackbar(
         'Berhasil',
         'Tugas berhasil dihapus',
@@ -326,11 +580,13 @@ class _HomeViewState extends State<HomeView> {
         colorText: Colors.white,
       );
     } else {
+      final errorMsg = controller.errorMessage.isNotEmpty
+          ? controller.errorMessage
+          : 'Gagal menghapus tugas';
+      AccessibilityUtils.announceMessage('Error: $errorMsg');
       Get.snackbar(
         'Error',
-        controller.errorMessage.isNotEmpty
-            ? controller.errorMessage
-            : 'Gagal menghapus tugas',
+        errorMsg,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../controllers/task_controller.dart';
 import '../model/task.dart';
+import '../routes/app_routes.dart';
+import '../utils/accessibility_utils.dart';
 
 /// AddTaskView untuk menambah tugas baru
 /// Menyediakan form dengan validasi untuk input data tugas
@@ -22,10 +25,16 @@ class _AddTaskViewState extends State<AddTaskView> {
   DateTime? _selectedDeadline;
   bool _isLoading = false;
 
-  // Focus nodes untuk navigasi antar field
-  final _titleFocusNode = FocusNode();
-  final _descriptionFocusNode = FocusNode();
-  final _subjectFocusNode = FocusNode();
+  // Focus nodes untuk navigasi antar field dengan accessibility
+  final _titleFocusNode = AccessibilityUtils.createFocusNode(
+    debugLabel: 'Title Field',
+  );
+  final _descriptionFocusNode = AccessibilityUtils.createFocusNode(
+    debugLabel: 'Description Field',
+  );
+  final _subjectFocusNode = AccessibilityUtils.createFocusNode(
+    debugLabel: 'Subject Field',
+  );
 
   @override
   void dispose() {
@@ -40,31 +49,73 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: _buildAppBar(), body: _buildBody());
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: AccessibilityUtils.createSemanticWidget(
+        label: 'Form tambah tugas baru',
+        hint: 'Isi semua field yang diperlukan untuk membuat tugas baru',
+        child: _buildBody(),
+      ),
+    );
   }
 
   /// Build AppBar dengan tombol cancel dan save
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Tambah Tugas Baru'),
+      title: AccessibilityUtils.createSemanticWidget(
+        header: true,
+        label: 'Tambah Tugas Baru',
+        child: const Text('Tambah Tugas Baru'),
+      ),
       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      leading: IconButton(
-        icon: const Icon(Icons.close),
-        onPressed: _handleCancel,
+      leading: AccessibilityUtils.ensureMinTouchTarget(
+        child: Semantics(
+          button: true,
+          label: AccessibilityUtils.cancelLabel,
+          hint: 'Batalkan pembuatan tugas dan kembali ke daftar tugas',
+          onTap: _handleCancel,
+          child: IconButton(
+            icon: const Icon(Icons.close, size: 28),
+            onPressed: _handleCancel,
+          ),
+        ),
       ),
       actions: [
-        TextButton(
-          onPressed: _isLoading ? null : _handleSave,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text(
-                  'Simpan',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        AccessibilityUtils.ensureMinTouchTarget(
+          child: Semantics(
+            button: true,
+            label: AccessibilityUtils.getButtonSemantics(
+              label: AccessibilityUtils.saveTaskLabel,
+              isLoading: _isLoading,
+              isEnabled: !_isLoading,
+            ),
+            onTap: _isLoading ? null : _handleSave,
+            child: TextButton(
+              onPressed: _isLoading ? null : _handleSave,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
                 ),
+              ),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        semanticsLabel: 'Menyimpan tugas',
+                      ),
+                    )
+                  : const Text(
+                      'Simpan',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+            ),
+          ),
         ),
       ],
     );
@@ -98,27 +149,38 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   /// Build field untuk judul tugas
   Widget _buildTitleField() {
-    return TextFormField(
-      controller: _titleController,
-      focusNode: _titleFocusNode,
-      decoration: const InputDecoration(
-        labelText: 'Judul Tugas *',
-        hintText: 'Masukkan judul tugas',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.assignment),
+    return Semantics(
+      textField: true,
+      label: AccessibilityUtils.getFormFieldSemantics(
+        label: 'Judul Tugas',
+        isRequired: true,
+        value: _titleController.text,
+        hint: 'Masukkan judul tugas, maksimal 100 karakter',
       ),
-      maxLength: 100,
-      textInputAction: TextInputAction.next,
-      onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Judul tugas tidak boleh kosong';
-        }
-        if (value.trim().length < 3) {
-          return 'Judul tugas minimal 3 karakter';
-        }
-        return null;
-      },
+      child: TextFormField(
+        controller: _titleController,
+        focusNode: _titleFocusNode,
+        decoration: const InputDecoration(
+          labelText: 'Judul Tugas *',
+          hintText: 'Masukkan judul tugas',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.assignment, size: 24),
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        style: const TextStyle(fontSize: 16, height: 1.3),
+        maxLength: 100,
+        textInputAction: TextInputAction.next,
+        onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Judul tugas tidak boleh kosong';
+          }
+          if (value.trim().length < 3) {
+            return 'Judul tugas minimal 3 karakter';
+          }
+          return null;
+        },
+      ),
     );
   }
 
@@ -130,41 +192,79 @@ class _AddTaskViewState extends State<AddTaskView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          controller: _subjectController,
-          focusNode: _subjectFocusNode,
-          decoration: const InputDecoration(
-            labelText: 'Mata Pelajaran *',
-            hintText: 'Masukkan mata pelajaran',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.school),
+        Semantics(
+          textField: true,
+          label: AccessibilityUtils.getFormFieldSemantics(
+            label: 'Mata Pelajaran',
+            isRequired: true,
+            value: _subjectController.text,
+            hint: 'Masukkan nama mata pelajaran',
           ),
-          textInputAction: TextInputAction.next,
-          onFieldSubmitted: (_) => _descriptionFocusNode.requestFocus(),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Mata pelajaran tidak boleh kosong';
-            }
-            return null;
-          },
+          child: TextFormField(
+            controller: _subjectController,
+            focusNode: _subjectFocusNode,
+            decoration: const InputDecoration(
+              labelText: 'Mata Pelajaran *',
+              hintText: 'Masukkan mata pelajaran',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.school, size: 24),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            style: const TextStyle(fontSize: 16, height: 1.3),
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => _descriptionFocusNode.requestFocus(),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Mata pelajaran tidak boleh kosong';
+              }
+              return null;
+            },
+          ),
         ),
         if (existingSubjects.isNotEmpty) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             'Mata pelajaran yang sudah ada:',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 8,
-            children: existingSubjects.take(5).map((subject) {
-              return ActionChip(
-                label: Text(subject),
-                onPressed: () {
-                  _subjectController.text = subject;
-                },
-              );
-            }).toList(),
+          const SizedBox(height: 8),
+          Semantics(
+            label: 'Pilihan mata pelajaran yang sudah ada',
+            hint:
+                'Ketuk salah satu untuk menggunakan mata pelajaran yang sudah ada',
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: existingSubjects.take(5).map((subject) {
+                return AccessibilityUtils.ensureMinTouchTarget(
+                  child:
+                      ActionChip(
+                        label: Text(
+                          subject,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        onPressed: () {
+                          _subjectController.text = subject;
+                          AccessibilityUtils.announceMessage(
+                            'Mata pelajaran $subject dipilih',
+                          );
+                        },
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ).asSemanticButton(
+                        label: 'Pilih mata pelajaran $subject',
+                        hint: 'Ketuk untuk menggunakan mata pelajaran $subject',
+                      ),
+                );
+              }).toList(),
+            ),
           ),
         ],
       ],
@@ -173,58 +273,109 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   /// Build field untuk deskripsi tugas
   Widget _buildDescriptionField() {
-    return TextFormField(
-      controller: _descriptionController,
-      focusNode: _descriptionFocusNode,
-      decoration: const InputDecoration(
-        labelText: 'Deskripsi',
-        hintText: 'Masukkan deskripsi tugas (opsional)',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.description),
-        alignLabelWithHint: true,
+    return Semantics(
+      textField: true,
+      label: AccessibilityUtils.getFormFieldSemantics(
+        label: 'Deskripsi Tugas',
+        isRequired: false,
+        value: _descriptionController.text,
+        hint: 'Masukkan deskripsi tugas, maksimal 500 karakter, opsional',
       ),
-      maxLines: 4,
-      maxLength: 500,
-      textInputAction: TextInputAction.newline,
-      validator: (value) {
-        if (value != null && value.length > 500) {
-          return 'Deskripsi maksimal 500 karakter';
-        }
-        return null;
-      },
+      child: TextFormField(
+        controller: _descriptionController,
+        focusNode: _descriptionFocusNode,
+        decoration: const InputDecoration(
+          labelText: 'Deskripsi',
+          hintText: 'Masukkan deskripsi tugas (opsional)',
+          border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.description, size: 24),
+          alignLabelWithHint: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        style: const TextStyle(fontSize: 16, height: 1.4),
+        maxLines: 4,
+        maxLength: 500,
+        textInputAction: TextInputAction.newline,
+        validator: (value) {
+          if (value != null && value.length > 500) {
+            return 'Deskripsi maksimal 500 karakter';
+          }
+          return null;
+        },
+      ),
     );
   }
 
   /// Build field untuk deadline dengan DatePicker
   Widget _buildDeadlineField() {
-    return InkWell(
+    final deadlineText = _selectedDeadline != null
+        ? _formatDeadline(_selectedDeadline!)
+        : 'Pilih tanggal deadline';
+
+    return Semantics(
+      button: true,
+      label: AccessibilityUtils.getFormFieldSemantics(
+        label: 'Deadline Tugas',
+        isRequired: true,
+        value: deadlineText,
+        hint: 'Ketuk untuk membuka pemilih tanggal dan waktu deadline',
+        error: _getDeadlineError(),
+      ),
       onTap: _selectDeadline,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: 'Deadline *',
-          hintText: 'Pilih tanggal deadline',
-          border: const OutlineInputBorder(),
-          prefixIcon: const Icon(Icons.calendar_today),
-          suffixIcon: _selectedDeadline != null
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDeadline = null;
-                    });
-                  },
-                )
-              : null,
-          errorText: _getDeadlineError(),
-        ),
-        child: Text(
-          _selectedDeadline != null
-              ? _formatDeadline(_selectedDeadline!)
-              : 'Pilih tanggal deadline',
-          style: TextStyle(
-            color: _selectedDeadline != null
-                ? Theme.of(context).textTheme.bodyLarge?.color
-                : Theme.of(context).hintColor,
+      child: AccessibilityUtils.ensureMinTouchTarget(
+        child: InkWell(
+          onTap: _selectDeadline,
+          borderRadius: BorderRadius.circular(8),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              labelText: 'Deadline *',
+              hintText: 'Pilih tanggal deadline',
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.calendar_today, size: 24),
+              suffixIcon: _selectedDeadline != null
+                  ? AccessibilityUtils.ensureMinTouchTarget(
+                      child: Semantics(
+                        button: true,
+                        label: AccessibilityUtils.clearDateLabel,
+                        hint: 'Hapus tanggal deadline yang dipilih',
+                        onTap: () {
+                          setState(() {
+                            _selectedDeadline = null;
+                          });
+                          AccessibilityUtils.announceMessage(
+                            'Deadline dihapus',
+                          );
+                        },
+                        child: IconButton(
+                          icon: const Icon(Icons.clear, size: 24),
+                          onPressed: () {
+                            setState(() {
+                              _selectedDeadline = null;
+                            });
+                            AccessibilityUtils.announceMessage(
+                              'Deadline dihapus',
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                  : null,
+              errorText: _getDeadlineError(),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            child: Text(
+              deadlineText,
+              style: TextStyle(
+                fontSize: 16,
+                height: 1.3,
+                color: _selectedDeadline != null
+                    ? Theme.of(context).textTheme.bodyLarge?.color
+                    : Theme.of(context).hintColor,
+              ),
+            ),
           ),
         ),
       ),
@@ -371,7 +522,8 @@ class _AddTaskViewState extends State<AddTaskView> {
 
       if (success) {
         _showSuccessSnackbar('Tugas berhasil ditambahkan');
-        Get.back(); // Kembali ke halaman sebelumnya
+        // Kembali ke home dan refresh data
+        Get.offAllNamed(AppRoutes.home);
       } else {
         _showErrorSnackbar(
           taskController.errorMessage.isNotEmpty
@@ -401,7 +553,7 @@ class _AddTaskViewState extends State<AddTaskView> {
     if (hasChanges) {
       _showCancelConfirmation();
     } else {
-      Get.back();
+      Get.offAllNamed(AppRoutes.home);
     }
   }
 
@@ -419,7 +571,7 @@ class _AddTaskViewState extends State<AddTaskView> {
           TextButton(
             onPressed: () {
               Get.back(); // Close dialog
-              Get.back(); // Close AddTaskView
+              Get.offAllNamed(AppRoutes.home); // Kembali ke home
             },
             child: const Text('Ya, Batalkan'),
           ),

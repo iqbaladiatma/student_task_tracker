@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../model/task.dart';
 import '../services/storage_service.dart';
+import '../utils/performance_utils.dart';
 
 /// Enum untuk filter status tugas
 enum TaskFilter {
@@ -66,18 +67,20 @@ class TaskController extends GetxController {
 
   /// Load semua tugas dari storage
   Future<void> loadTasks() async {
-    try {
-      _setLoading(true);
-      _clearError();
+    await PerformanceUtils.measureAsync('loadTasks', () async {
+      try {
+        _setLoading(true);
+        _clearError();
 
-      final tasks = await _storageService.getAllTasks();
-      _allTasks.assignAll(tasks);
-      _applyCurrentFilter();
-    } catch (e) {
-      _setError('Gagal memuat tugas: ${e.toString()}');
-    } finally {
-      _setLoading(false);
-    }
+        final tasks = await _storageService.getAllTasks();
+        _allTasks.assignAll(tasks);
+        _applyCurrentFilter();
+      } catch (e) {
+        _setError('Gagal memuat tugas: ${e.toString()}');
+      } finally {
+        _setLoading(false);
+      }
+    });
   }
 
   /// Tambah tugas baru
@@ -192,45 +195,53 @@ class TaskController extends GetxController {
   }
 
   /// Apply filter dan search ke daftar tugas
+  /// Performance optimization: More efficient filtering and sorting
   void _applyCurrentFilter() {
-    List<Task> filtered = List.from(_allTasks);
+    PerformanceUtils.measureSync('applyCurrentFilter', () {
+      // Performance optimization: Use where() directly instead of creating intermediate lists
+      Iterable<Task> filtered = _allTasks;
 
-    // Apply status filter
-    switch (_currentFilter.value) {
-      case TaskFilter.pending:
-        filtered = filtered.where((task) => !task.isCompleted).toList();
-        break;
-      case TaskFilter.completed:
-        filtered = filtered.where((task) => task.isCompleted).toList();
-        break;
-      case TaskFilter.overdue:
-        filtered = filtered.where((task) => task.isOverdue).toList();
-        break;
-      case TaskFilter.all:
-        // No additional filtering needed
-        break;
-    }
+      // Apply status filter first (most selective)
+      switch (_currentFilter.value) {
+        case TaskFilter.pending:
+          filtered = filtered.where((task) => !task.isCompleted);
+          break;
+        case TaskFilter.completed:
+          filtered = filtered.where((task) => task.isCompleted);
+          break;
+        case TaskFilter.overdue:
+          filtered = filtered.where((task) => task.isOverdue);
+          break;
+        case TaskFilter.all:
+          // No additional filtering needed
+          break;
+      }
 
-    // Apply search filter
-    if (_searchQuery.value.isNotEmpty) {
-      filtered = filtered.where((task) {
-        return task.title.toLowerCase().contains(_searchQuery.value) ||
-            task.description.toLowerCase().contains(_searchQuery.value) ||
-            task.subject.toLowerCase().contains(_searchQuery.value);
-      }).toList();
-    }
+      // Apply search filter (if any)
+      if (_searchQuery.value.isNotEmpty) {
+        final searchLower = _searchQuery.value;
+        filtered = filtered.where((task) {
+          return task.title.toLowerCase().contains(searchLower) ||
+              task.description.toLowerCase().contains(searchLower) ||
+              task.subject.toLowerCase().contains(searchLower);
+        });
+      }
 
-    // Sort by deadline (ascending) with completed tasks at the end
-    filtered.sort((a, b) {
-      // Completed tasks go to the end
-      if (a.isCompleted && !b.isCompleted) return 1;
-      if (!a.isCompleted && b.isCompleted) return -1;
+      // Performance optimization: Convert to list only once and sort efficiently
+      final List<Task> filteredList = filtered.toList();
 
-      // For tasks with same completion status, sort by deadline
-      return a.deadline.compareTo(b.deadline);
+      // Performance optimization: More efficient sorting
+      filteredList.sort((a, b) {
+        // Completed tasks go to the end
+        if (a.isCompleted != b.isCompleted) {
+          return a.isCompleted ? 1 : -1;
+        }
+        // For tasks with same completion status, sort by deadline
+        return a.deadline.compareTo(b.deadline);
+      });
+
+      _filteredTasks.assignAll(filteredList);
     });
-
-    _filteredTasks.assignAll(filtered);
   }
 
   /// Get task by ID
@@ -257,6 +268,7 @@ class TaskController extends GetxController {
   }
 
   /// Refresh data dari storage
+  @override
   Future<void> refresh() async {
     await loadTasks();
   }
@@ -281,7 +293,12 @@ class TaskController extends GetxController {
 
   @override
   void onClose() {
-    // Cleanup resources jika diperlukan
+    // Performance optimization: Proper memory management and disposal
+    _allTasks.clear();
+    _filteredTasks.clear();
+    _searchQuery.value = '';
+    _errorMessage.value = '';
+    _isLoading.value = false;
     super.onClose();
   }
 }

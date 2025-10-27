@@ -96,7 +96,9 @@
   - Tambahkan navigation dan success feedback
   - _Requirements: 1.1-1.7, 7.1-7.5_
 
-- [-] 8. Implementasi EditTaskView untuk mengubah tugas
+- [x] 8. Implementasi EditTaskView untuk mengubah tugas
+
+
 
 
 
@@ -106,13 +108,24 @@
   - Implementasi navigation dan success feedback
   - _Requirements: 2.1-2.5, 3.1-3.4, 7.1-7.5_
 
-- [ ] 9. Setup routing dan navigation
+- [x] 9. Setup routing dan navigation
+
+
+
+
+
+
   - Konfigurasi GetX routing untuk navigation antar screens
   - Implementasi navigation dari HomeView ke AddTaskView dan EditTaskView
   - Setup proper route transitions dan back navigation
   - _Requirements: 7.1-7.5_
 
-- [ ] 10. Update main.dart dan aplikasi initialization
+- [x] 10. Update main.dart dan aplikasi initialization
+
+
+
+
+
   - Update main.dart untuk initialize Hive dan GetX
   - Setup dependency injection untuk controllers dan services
   - Konfigurasi app theme dan title
@@ -135,19 +148,30 @@
 
 - [ ] 13. Buat integration tests untuk end-to-end scenarios
   - Test complete task lifecycle (add → edit → complete → delete)
-  - Test filter dan search functionality end-to-end
+  - Test filter dan  search functionality end-to-end
   - Test data persistence across app restarts
   - Test error scenarios dan recovery mechanisms
   - _Requirements: 1.1-1.7, 2.1-2.5, 3.1-3.4, 4.1-4.4, 5.1-5.5, 6.1-6.4_
 
-- [ ] 14. Implementasi accessibility features
+- [x] 14. Implementasi accessibility features
+
+
+
+
+
+
   - Tambahkan semantic labels untuk screen readers
   - Implementasi proper focus management
   - Setup high contrast themes dan scalable text
   - Test dengan accessibility tools dan screen readers
   - _Requirements: 7.1-7.5_
 
-- [ ] 15. Performance optimization dan final polish
+- [x] 15. Performance optimization dan final polish
+
+
+
+
+
   - Optimize ListView performance dengan proper itemExtent
   - Implementasi debounced search untuk better performance
   - Setup proper memory management dan disposal

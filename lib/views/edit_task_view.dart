@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../controllers/task_controller.dart';
 import '../model/task.dart';
+import '../routes/app_routes.dart';
 
 /// EditTaskView untuk mengubah tugas yang sudah ada
 /// Menyediakan form dengan data pre-filled dan opsi delete
@@ -443,7 +444,8 @@ class _EditTaskViewState extends State<EditTaskView> {
 
       if (success) {
         _showSuccessSnackbar('Tugas berhasil diperbarui');
-        Get.back(result: true); // Kembali dengan result success
+        // Kembali ke home dan refresh data
+        Get.offAllNamed(AppRoutes.home);
       } else {
         _showErrorSnackbar(
           taskController.errorMessage.isNotEmpty
@@ -477,7 +479,8 @@ class _EditTaskViewState extends State<EditTaskView> {
 
       if (success) {
         _showSuccessSnackbar('Tugas berhasil dihapus');
-        Get.back(result: true); // Kembali dengan result success
+        // Kembali ke home dan refresh data
+        Get.offAllNamed(AppRoutes.home);
       } else {
         _showErrorSnackbar(
           taskController.errorMessage.isNotEmpty
@@ -501,7 +504,7 @@ class _EditTaskViewState extends State<EditTaskView> {
     if (_hasChanges) {
       _showCancelConfirmation();
     } else {
-      Get.back();
+      Get.offAllNamed(AppRoutes.home);
     }
   }
 
@@ -566,7 +569,7 @@ class _EditTaskViewState extends State<EditTaskView> {
           TextButton(
             onPressed: () {
               Get.back(); // Close dialog
-              Get.back(); // Close EditTaskView
+              Get.offAllNamed(AppRoutes.home); // Kembali ke home
             },
             child: const Text('Ya, Batalkan'),
           ),

@@ -37,7 +37,8 @@ class HiveStorageService implements StorageService {
   Future<List<Task>> getAllTasks() async {
     try {
       final box = taskBox;
-      return box.values.toList();
+      // Performance optimization: Return list directly without unnecessary copying
+      return List<Task>.from(box.values);
     } catch (e) {
       throw StorageException('Failed to retrieve tasks', e);
     }

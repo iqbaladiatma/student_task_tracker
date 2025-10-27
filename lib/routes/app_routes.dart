@@ -14,7 +14,12 @@ class AppRoutes {
 /// Konfigurasi routes untuk aplikasi
 class AppPages {
   static final List<GetPage> pages = [
-    GetPage(name: AppRoutes.home, page: () => const HomeView()),
+    GetPage(
+      name: AppRoutes.home,
+      page: () => const HomeView(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 200),
+    ),
     GetPage(
       name: AppRoutes.addTask,
       page: () => const AddTaskView(),
