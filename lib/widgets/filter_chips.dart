@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:get/get.dart';
 import '../controllers/task_controller.dart';
 import '../model/task.dart';
@@ -33,7 +34,9 @@ class FilterChips extends StatelessWidget {
             // Performance optimization: Add physics for better scrolling
             physics: const BouncingScrollPhysics(),
             child: Row(
-              children: TaskFilter.values.map((filter) {
+              children: TaskFilter.values.asMap().entries.map((entry) {
+                final index = entry.key;
+                final filter = entry.value;
                 final isSelected = currentFilter == filter;
                 final count = _getFilterCount(taskController, filter);
                 final semanticLabel = AccessibilityUtils.getFilterChipSemantics(
@@ -42,66 +45,108 @@ class FilterChips extends StatelessWidget {
                   isSelected: isSelected,
                 );
 
-                return Padding(
-                  padding: EdgeInsets.only(right: spacing ?? 8),
-                  child: AccessibilityUtils.ensureMinTouchTarget(
-                    child: Semantics(
-                      button: true,
-                      label: semanticLabel,
-                      selected: isSelected,
-                      onTap: () {
-                        taskController.setFilter(filter);
-                        AccessibilityUtils.announceMessage(
-                          'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
-                        );
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                        child: FilterChip(
-                          label: _buildChipLabel(filter, count),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
+                return AnimationConfiguration.staggeredList(
+                  position: index,
+                  duration: const Duration(milliseconds: 375),
+                  child: SlideAnimation(
+                    horizontalOffset: 50.0,
+                    child: FadeInAnimation(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: spacing ?? 8),
+                        child: AccessibilityUtils.ensureMinTouchTarget(
+                          child: Semantics(
+                            button: true,
+                            label: semanticLabel,
+                            selected: isSelected,
+                            onTap: () {
                               taskController.setFilter(filter);
                               AccessibilityUtils.announceMessage(
                                 'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
                               );
-                            }
-                          },
-                          backgroundColor: _getBackgroundColor(filter, false),
-                          selectedColor: _getBackgroundColor(filter, true),
-                          checkmarkColor: _getCheckmarkColor(filter),
-                          labelStyle: TextStyle(
-                            color: isSelected
-                                ? _getSelectedTextColor(filter)
-                                : _getUnselectedTextColor(filter),
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w500,
-                            fontSize:
-                                14, // Slightly larger for better readability
-                            height: 1.2,
-                          ),
-                          side: BorderSide(
-                            color: isSelected
-                                ? _getBorderColor(filter, true)
-                                : _getBorderColor(filter, false),
-                            width: isSelected
-                                ? 2.5
-                                : 1.5, // Thicker borders for better visibility
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          elevation: isSelected ? 3 : 1,
-                          pressElevation: 6,
-                          materialTapTargetSize: MaterialTapTargetSize.padded,
-                          visualDensity: VisualDensity.standard,
-                          showCheckmark: false, // Menggunakan styling custom
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeInOut,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: isSelected
+                                      ? LinearGradient(
+                                          colors: [
+                                            _getFilterBaseColor(
+                                              filter,
+                                            ).withValues(alpha: 0.2),
+                                            _getFilterBaseColor(
+                                              filter,
+                                            ).withValues(alpha: 0.1),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : LinearGradient(
+                                          colors: [
+                                            Colors.grey[50]!,
+                                            Colors.grey[100]!,
+                                          ],
+                                        ),
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? _getFilterBaseColor(filter)
+                                        : Colors.grey[300]!,
+                                    width: isSelected ? 2.5 : 1.5,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: _getFilterBaseColor(
+                                              filter,
+                                            ).withValues(alpha: 0.3),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ]
+                                      : [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: InkWell(
+                                    onTap: () {
+                                      taskController.setFilter(filter);
+                                      AccessibilityUtils.announceMessage(
+                                        'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(24),
+                                    splashColor: _getFilterBaseColor(
+                                      filter,
+                                    ).withValues(alpha: 0.1),
+                                    highlightColor: _getFilterBaseColor(
+                                      filter,
+                                    ).withValues(alpha: 0.05),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 12,
+                                      ),
+                                      child: _buildModernChipLabel(
+                                        filter,
+                                        count,
+                                        isSelected,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -116,37 +161,73 @@ class FilterChips extends StatelessWidget {
     });
   }
 
-  /// Build label untuk chip dengan nama filter dan count
-  Widget _buildChipLabel(TaskFilter filter, int count) {
+  /// Build modern label untuk chip dengan nama filter dan count
+  Widget _buildModernChipLabel(TaskFilter filter, int count, bool isSelected) {
     return AccessibilityUtils.excludeSemantics(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            _getFilterIcon(filter),
-            size: 18, // Slightly larger icon
-            semanticLabel: _getFilterName(filter),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? _getFilterBaseColor(filter).withValues(alpha: 0.2)
+                  : Colors.grey.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              _getFilterIcon(filter),
+              size: 16,
+              color: isSelected
+                  ? _getFilterBaseColor(filter)
+                  : Colors.grey[600],
+              semanticLabel: _getFilterName(filter),
+            ),
           ),
-          const SizedBox(width: 6),
-          Text(_getFilterName(filter), style: const TextStyle(height: 1.2)),
+          const SizedBox(width: 8),
+          Text(
+            _getFilterName(filter),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected
+                  ? _getFilterBaseColor(filter)
+                  : Colors.grey[700],
+              height: 1.2,
+            ),
+          ),
           if (count > 0) ...[
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  width: 1,
+                gradient: LinearGradient(
+                  colors: isSelected
+                      ? [
+                          _getFilterBaseColor(filter),
+                          _getFilterBaseColor(filter).withValues(alpha: 0.8),
+                        ]
+                      : [Colors.grey[400]!, Colors.grey[500]!],
                 ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        (isSelected
+                                ? _getFilterBaseColor(filter)
+                                : Colors.grey[400]!)
+                            .withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Text(
                 count.toString(),
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: Colors.white,
                   height: 1.0,
                 ),
               ),
@@ -155,6 +236,11 @@ class FilterChips extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Build label untuk chip dengan nama filter dan count (fallback)
+  Widget _buildChipLabel(TaskFilter filter, int count) {
+    return _buildModernChipLabel(filter, count, false);
   }
 
   /// Get nama filter dalam bahasa Indonesia

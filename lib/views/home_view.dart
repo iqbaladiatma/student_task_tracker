@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:get/get.dart';
 import '../controllers/task_controller.dart';
 import '../routes/app_routes.dart';
@@ -84,6 +85,9 @@ class _HomeViewState extends State<HomeView> {
         label: 'Daftar tugas utama',
         child: Column(
           children: [
+            // Modern header dengan statistik
+            _buildModernHeader(taskController),
+
             // Filter chips dengan semantic label
             AccessibilityUtils.createSemanticWidget(
               label: 'Filter tugas',
@@ -460,13 +464,22 @@ class _HomeViewState extends State<HomeView> {
           cacheExtent: PerformanceUtils.listCacheExtent,
           itemBuilder: (context, index) {
             final task = controller.filteredTasks[index];
-            return Semantics(
-              sortKey: OrdinalSortKey(index.toDouble()),
-              child: TaskCard(
-                task: task,
-                onTap: () => _navigateToEditTask(task.id),
-                onEdit: () => _navigateToEditTask(task.id),
-                onDelete: () => _deleteTask(controller, task.id),
+            return AnimationConfiguration.staggeredList(
+              position: index,
+              duration: const Duration(milliseconds: 375),
+              child: SlideAnimation(
+                verticalOffset: 50.0,
+                child: FadeInAnimation(
+                  child: Semantics(
+                    sortKey: OrdinalSortKey(index.toDouble()),
+                    child: TaskCard(
+                      task: task,
+                      onTap: () => _navigateToEditTask(task.id),
+                      onEdit: () => _navigateToEditTask(task.id),
+                      onDelete: () => _deleteTask(controller, task.id),
+                    ),
+                  ),
+                ),
               ),
             );
           },
@@ -481,18 +494,208 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  /// Build modern header dengan statistik tugas
+  Widget _buildModernHeader(TaskController controller) {
+    return Obx(() {
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.assignment_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tugas Anda',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _getGreetingMessage(),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildStatCard(
+                    'Total',
+                    controller.totalTasks.toString(),
+                    Icons.list_alt,
+                    Colors.blue,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Selesai',
+                    controller.completedTasks.toString(),
+                    Icons.check_circle,
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Pending',
+                    controller.pendingTasks.toString(),
+                    Icons.pending_actions,
+                    Colors.orange,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildStatCard(
+                    'Terlambat',
+                    controller.overdueTasks.toString(),
+                    Icons.warning,
+                    Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// Build card statistik kecil
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: color.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Get greeting message berdasarkan waktu
+  String _getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Selamat pagi! Mari selesaikan tugas hari ini.';
+    } else if (hour < 17) {
+      return 'Selamat siang! Tetap semangat mengerjakan tugas.';
+    } else {
+      return 'Selamat sore! Jangan lupa cek tugas yang belum selesai.';
+    }
+  }
+
   /// Build FloatingActionButton untuk menambah tugas
   Widget _buildFloatingActionButton() {
-    return Semantics(
-      button: true,
-      label: AccessibilityUtils.addTaskButtonLabel,
-      hint: 'Buka form untuk menambah tugas baru',
-      onTap: _navigateToAddTask,
-      child: FloatingActionButton(
-        focusNode: _fabFocusNode,
-        onPressed: _navigateToAddTask,
-        tooltip: AccessibilityUtils.addTaskButtonLabel,
-        child: const Icon(Icons.add, size: 28, semanticLabel: 'Tambah'),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Semantics(
+        button: true,
+        label: AccessibilityUtils.addTaskButtonLabel,
+        hint: 'Buka form untuk menambah tugas baru',
+        onTap: _navigateToAddTask,
+        child: FloatingActionButton.extended(
+          focusNode: _fabFocusNode,
+          onPressed: _navigateToAddTask,
+          tooltip: AccessibilityUtils.addTaskButtonLabel,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          icon: const Icon(Icons.add, size: 24, semanticLabel: 'Tambah'),
+          label: const Text(
+            'Tambah Tugas',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+          ),
+        ),
       ),
     );
   }

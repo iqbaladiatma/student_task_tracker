@@ -80,68 +80,91 @@ class TaskCard extends StatelessWidget {
           }
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: _getBorderColor(), width: 1.5),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  _getStatusColor().withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _getStatusColor().withValues(alpha: 0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 0,
+                ),
+              ],
+              border: Border.all(color: _getBorderColor(), width: 2),
             ),
             child: AccessibilityUtils.ensureMinTouchTarget(
-              child: InkWell(
-                onTap: onTap,
-                onLongPress: onEdit,
-                borderRadius: BorderRadius.circular(12),
-                // Performance optimization: Add splash and highlight colors
-                splashColor: _getStatusColor().withValues(alpha: 0.1),
-                highlightColor: _getStatusColor().withValues(alpha: 0.05),
-                child: AnimatedPadding(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.all(16),
-                  child: AccessibilityUtils.mergeSemantics(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Checkbox untuk toggle status
-                        _buildCheckbox(taskController),
-                        const SizedBox(width: 12),
-
-                        // Konten utama tugas
-                        Expanded(
-                          child: Column(
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(16),
+                child: InkWell(
+                  onTap: onTap,
+                  onLongPress: onEdit,
+                  borderRadius: BorderRadius.circular(16),
+                  splashColor: _getStatusColor().withValues(alpha: 0.1),
+                  highlightColor: _getStatusColor().withValues(alpha: 0.05),
+                  child: AnimatedPadding(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(20),
+                    child: AccessibilityUtils.mergeSemantics(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header row dengan checkbox dan status
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Judul tugas
-                              _buildTitle(),
-                              AccessibilityUtils.createAccessibleSpacer(
-                                height: 4,
-                              ),
-
-                              // Mata pelajaran
-                              _buildSubject(),
-                              AccessibilityUtils.createAccessibleSpacer(
-                                height: 8,
-                              ),
-
-                              // Deskripsi (jika ada)
-                              if (task.description.isNotEmpty) ...[
-                                _buildDescription(),
-                                AccessibilityUtils.createAccessibleSpacer(
-                                  height: 8,
+                              _buildModernCheckbox(taskController),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildTitle(),
+                                    const SizedBox(height: 4),
+                                    _buildSubject(),
+                                  ],
                                 ),
-                              ],
-
-                              // Deadline dan status indicators
-                              _buildDeadlineRow(),
+                              ),
+                              _buildPriorityIndicator(),
                             ],
                           ),
-                        ),
 
-                        // Status indicator
-                        _buildStatusIndicator(),
-                      ],
+                          // Deskripsi (jika ada)
+                          if (task.description.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _buildDescription(),
+                          ],
+
+                          const SizedBox(height: 16),
+
+                          // Footer dengan deadline dan actions
+                          Row(
+                            children: [
+                              Expanded(child: _buildModernDeadlineRow()),
+                              const SizedBox(width: 12),
+                              _buildActionButtons(),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -153,8 +176,8 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  /// Build checkbox untuk toggle completion status
-  Widget _buildCheckbox(TaskController controller) {
+  /// Build modern checkbox dengan animasi dan styling yang lebih menarik
+  Widget _buildModernCheckbox(TaskController controller) {
     return AccessibilityUtils.ensureMinTouchTarget(
       child: Semantics(
         button: true,
@@ -173,27 +196,60 @@ class TaskCard extends StatelessWidget {
                 : 'Tugas ${task.title} ditandai belum selesai',
           );
         },
-        child: Transform.scale(
-          scale: 1.3, // Slightly larger for better accessibility
-          child: Checkbox(
-            value: task.isCompleted,
-            onChanged: (value) {
-              controller.toggleTaskStatus(task.id);
-              AccessibilityUtils.announceMessage(
-                value == true
-                    ? 'Tugas ${task.title} ditandai selesai'
-                    : 'Tugas ${task.title} ditandai belum selesai',
-              );
-            },
-            activeColor: _getStatusColor(),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: task.isCompleted ? _getStatusColor() : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _getStatusColor(), width: 2.5),
+            boxShadow: task.isCompleted
+                ? [
+                    BoxShadow(
+                      color: _getStatusColor().withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            child: InkWell(
+              onTap: () {
+                final newStatus = !task.isCompleted;
+                controller.toggleTaskStatus(task.id);
+                AccessibilityUtils.announceMessage(
+                  newStatus
+                      ? 'Tugas ${task.title} ditandai selesai'
+                      : 'Tugas ${task.title} ditandai belum selesai',
+                );
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: task.isCompleted
+                    ? Icon(
+                        Icons.check,
+                        key: const ValueKey('checked'),
+                        color: Colors.white,
+                        size: 18,
+                      )
+                    : const SizedBox(key: ValueKey('unchecked')),
+              ),
             ),
-            materialTapTargetSize: MaterialTapTargetSize.padded,
           ),
         ),
       ),
     );
+  }
+
+  /// Build checkbox untuk toggle completion status (fallback)
+  Widget _buildCheckbox(TaskController controller) {
+    return _buildModernCheckbox(controller);
   }
 
   /// Build judul tugas dengan styling berdasarkan status
@@ -215,27 +271,39 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  /// Build mata pelajaran dengan chip styling
+  /// Build mata pelajaran dengan chip styling modern
   Widget _buildSubject() {
     return AccessibilityUtils.excludeSemantics(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: _getSubjectColor().withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [
+              _getSubjectColor().withValues(alpha: 0.15),
+              _getSubjectColor().withValues(alpha: 0.08),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _getSubjectColor().withValues(alpha: 0.3),
-            width: 1.5, // Slightly thicker border for better visibility
+            color: _getSubjectColor().withValues(alpha: 0.4),
+            width: 1.5,
           ),
         ),
-        child: Text(
-          task.subject,
-          style: TextStyle(
-            fontSize: 13, // Slightly larger for better readability
-            fontWeight: FontWeight.w600,
-            color: _getSubjectColor(),
-            height: 1.2,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school_outlined, size: 14, color: _getSubjectColor()),
+            const SizedBox(width: 4),
+            Text(
+              task.subject,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _getSubjectColor(),
+                height: 1.2,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -259,62 +327,103 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  /// Build baris deadline dengan icon dan status
-  Widget _buildDeadlineRow() {
-    // Performance optimization: Reuse DateFormat
+  /// Build modern deadline row dengan styling yang lebih menarik
+  Widget _buildModernDeadlineRow() {
     final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
 
     return AccessibilityUtils.excludeSemantics(
-      child: Row(
-        children: [
-          Icon(
-            Icons.schedule,
-            size: 18, // Slightly larger icon
-            color: _getDeadlineColor(),
-            semanticLabel: 'Deadline',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: _getDeadlineColor().withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _getDeadlineColor().withValues(alpha: 0.2),
+            width: 1,
           ),
-          const SizedBox(width: 6),
-          Text(
-            dateFormat.format(task.deadline),
-            style: TextStyle(
-              fontSize: 13, // Slightly larger for better readability
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.access_time_rounded,
+              size: 16,
               color: _getDeadlineColor(),
-              fontWeight: FontWeight.w600,
-              height: 1.2,
+              semanticLabel: 'Deadline',
             ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                dateFormat.format(task.deadline),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: _getDeadlineColor(),
+                  fontWeight: FontWeight.w600,
+                  height: 1.2,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build baris deadline dengan icon dan status (fallback)
+  Widget _buildDeadlineRow() {
+    return _buildModernDeadlineRow();
+  }
+
+  /// Build priority indicator modern
+  Widget _buildPriorityIndicator() {
+    return AccessibilityUtils.excludeSemantics(
+      child: Column(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _getStatusColor().withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _getStatusColor().withValues(alpha: 0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(_getStatusIcon(), size: 18, color: _getStatusColor()),
           ),
-          const SizedBox(width: 8),
           if (task.isOverdue && !task.isCompleted) ...[
+            const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.15),
+                color: Colors.red,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red, width: 1),
               ),
               child: const Text(
-                'TERLAMBAT',
+                'LATE',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 8,
                   fontWeight: FontWeight.bold,
-                  color: Colors.red,
+                  color: Colors.white,
                 ),
               ),
             ),
           ] else if (task.isDueSoon && !task.isCompleted) ...[
+            const SizedBox(height: 4),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.15),
+                color: Colors.orange,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange, width: 1),
               ),
               child: const Text(
-                'SEGERA',
+                'SOON',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 8,
                   fontWeight: FontWeight.bold,
-                  color: Colors.orange,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -324,18 +433,76 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  /// Build status indicator di sisi kanan
-  Widget _buildStatusIndicator() {
+  /// Build action buttons untuk edit dan delete
+  Widget _buildActionButtons() {
     return AccessibilityUtils.excludeSemantics(
-      child: Container(
-        width: 6, // Slightly wider for better visibility
-        height: 60,
-        decoration: BoxDecoration(
-          color: _getStatusColor(),
-          borderRadius: BorderRadius.circular(3),
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.blue.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                onTap: onEdit,
+                borderRadius: BorderRadius.circular(18),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                  color: Colors.blue,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.red.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                onTap: () async {
+                  final confirmed = await _showDeleteConfirmation(Get.context!);
+                  if (confirmed) {
+                    onDelete?.call();
+                  }
+                },
+                borderRadius: BorderRadius.circular(18),
+                child: const Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  /// Build status indicator di sisi kanan (fallback)
+  Widget _buildStatusIndicator() {
+    return _buildPriorityIndicator();
   }
 
   /// Build background untuk swipe actions
@@ -491,5 +658,18 @@ class TaskCard extends StatelessWidget {
       Colors.brown,
     ];
     return colors[hash.abs() % colors.length];
+  }
+
+  /// Get icon berdasarkan status tugas
+  IconData _getStatusIcon() {
+    if (task.isCompleted) {
+      return Icons.check_circle;
+    } else if (task.isOverdue) {
+      return Icons.warning;
+    } else if (task.isDueSoon) {
+      return Icons.schedule;
+    } else {
+      return Icons.pending_actions;
+    }
   }
 }

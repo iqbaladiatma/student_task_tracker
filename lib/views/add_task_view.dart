@@ -121,25 +121,54 @@ class _AddTaskViewState extends State<AddTaskView> {
     );
   }
 
-  /// Build body dengan form input
+  /// Build body dengan form input modern
   Widget _buildBody() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildTitleField(),
-            const SizedBox(height: 16),
-            _buildSubjectField(),
-            const SizedBox(height: 16),
-            _buildDescriptionField(),
-            const SizedBox(height: 16),
-            _buildDeadlineField(),
-            const SizedBox(height: 32),
+            // Header card
+            _buildFormHeader(),
+            const SizedBox(height: 24),
+
+            // Form fields dalam card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildTitleField(),
+                  const SizedBox(height: 20),
+                  _buildSubjectField(),
+                  const SizedBox(height: 20),
+                  _buildDescriptionField(),
+                  const SizedBox(height: 20),
+                  _buildDeadlineField(),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
             _buildSaveButton(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildCancelButton(),
           ],
         ),
@@ -147,7 +176,69 @@ class _AddTaskViewState extends State<AddTaskView> {
     );
   }
 
-  /// Build field untuk judul tugas
+  /// Build header form yang menarik
+  Widget _buildFormHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.add_task,
+              color: Theme.of(context).colorScheme.primary,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Buat Tugas Baru',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Isi detail tugas yang ingin Anda buat',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build field untuk judul tugas dengan styling modern
   Widget _buildTitleField() {
     return Semantics(
       textField: true,
@@ -157,34 +248,84 @@ class _AddTaskViewState extends State<AddTaskView> {
         value: _titleController.text,
         hint: 'Masukkan judul tugas, maksimal 100 karakter',
       ),
-      child: TextFormField(
-        controller: _titleController,
-        focusNode: _titleFocusNode,
-        decoration: const InputDecoration(
-          labelText: 'Judul Tugas *',
-          hintText: 'Masukkan judul tugas',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.assignment, size: 24),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        style: const TextStyle(fontSize: 16, height: 1.3),
-        maxLength: 100,
-        textInputAction: TextInputAction.next,
-        onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Judul tugas tidak boleh kosong';
-          }
-          if (value.trim().length < 3) {
-            return 'Judul tugas minimal 3 karakter';
-          }
-          return null;
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.assignment_outlined,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Judul Tugas',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _titleController,
+            focusNode: _titleFocusNode,
+            decoration: InputDecoration(
+              hintText: 'Masukkan judul tugas yang jelas dan deskriptif',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            style: const TextStyle(fontSize: 16, height: 1.3),
+            maxLength: 100,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Judul tugas tidak boleh kosong';
+              }
+              if (value.trim().length < 3) {
+                return 'Judul tugas minimal 3 karakter';
+              }
+              return null;
+            },
+          ),
+        ],
       ),
     );
   }
 
-  /// Build field untuk mata pelajaran
+  /// Build field untuk mata pelajaran dengan styling modern
   Widget _buildSubjectField() {
     final taskController = Get.find<TaskController>();
     final existingSubjects = taskController.getUniqueSubjects();
@@ -192,6 +333,34 @@ class _AddTaskViewState extends State<AddTaskView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Icon(
+              Icons.school_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Mata Pelajaran',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '*',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
         Semantics(
           textField: true,
           label: AccessibilityUtils.getFormFieldSemantics(
@@ -203,12 +372,26 @@ class _AddTaskViewState extends State<AddTaskView> {
           child: TextFormField(
             controller: _subjectController,
             focusNode: _subjectFocusNode,
-            decoration: const InputDecoration(
-              labelText: 'Mata Pelajaran *',
-              hintText: 'Masukkan mata pelajaran',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.school, size: 24),
-              contentPadding: EdgeInsets.symmetric(
+            decoration: InputDecoration(
+              hintText: 'Contoh: Matematika, Bahasa Indonesia, Fisika',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
               ),
@@ -227,10 +410,11 @@ class _AddTaskViewState extends State<AddTaskView> {
         if (existingSubjects.isNotEmpty) ...[
           const SizedBox(height: 12),
           Text(
-            'Mata pelajaran yang sudah ada:',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+            'Pilih dari mata pelajaran yang sudah ada:',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
           ),
           const SizedBox(height: 8),
           Semantics(
@@ -239,24 +423,62 @@ class _AddTaskViewState extends State<AddTaskView> {
                 'Ketuk salah satu untuk menggunakan mata pelajaran yang sudah ada',
             child: Wrap(
               spacing: 8,
-              runSpacing: 4,
+              runSpacing: 8,
               children: existingSubjects.take(5).map((subject) {
+                final color = _getSubjectColor(subject);
                 return AccessibilityUtils.ensureMinTouchTarget(
                   child:
-                      ActionChip(
-                        label: Text(
-                          subject,
-                          style: const TextStyle(fontSize: 14),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              color.withValues(alpha: 0.1),
+                              color.withValues(alpha: 0.05),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: color.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
                         ),
-                        onPressed: () {
-                          _subjectController.text = subject;
-                          AccessibilityUtils.announceMessage(
-                            'Mata pelajaran $subject dipilih',
-                          );
-                        },
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(20),
+                          child: InkWell(
+                            onTap: () {
+                              _subjectController.text = subject;
+                              AccessibilityUtils.announceMessage(
+                                'Mata pelajaran $subject dipilih',
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(20),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.school_outlined,
+                                    size: 16,
+                                    color: color,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    subject,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: color,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ).asSemanticButton(
                         label: 'Pilih mata pelajaran $subject',
@@ -271,145 +493,334 @@ class _AddTaskViewState extends State<AddTaskView> {
     );
   }
 
-  /// Build field untuk deskripsi tugas
-  Widget _buildDescriptionField() {
-    return Semantics(
-      textField: true,
-      label: AccessibilityUtils.getFormFieldSemantics(
-        label: 'Deskripsi Tugas',
-        isRequired: false,
-        value: _descriptionController.text,
-        hint: 'Masukkan deskripsi tugas, maksimal 500 karakter, opsional',
-      ),
-      child: TextFormField(
-        controller: _descriptionController,
-        focusNode: _descriptionFocusNode,
-        decoration: const InputDecoration(
-          labelText: 'Deskripsi',
-          hintText: 'Masukkan deskripsi tugas (opsional)',
-          border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.description, size: 24),
-          alignLabelWithHint: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        ),
-        style: const TextStyle(fontSize: 16, height: 1.4),
-        maxLines: 4,
-        maxLength: 500,
-        textInputAction: TextInputAction.newline,
-        validator: (value) {
-          if (value != null && value.length > 500) {
-            return 'Deskripsi maksimal 500 karakter';
-          }
-          return null;
-        },
-      ),
-    );
+  /// Get warna untuk mata pelajaran berdasarkan hash
+  Color _getSubjectColor(String subject) {
+    final hash = subject.hashCode;
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.purple,
+      Colors.orange,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.brown,
+    ];
+    return colors[hash.abs() % colors.length];
   }
 
-  /// Build field untuk deadline dengan DatePicker
-  Widget _buildDeadlineField() {
-    final deadlineText = _selectedDeadline != null
-        ? _formatDeadline(_selectedDeadline!)
-        : 'Pilih tanggal deadline';
-
-    return Semantics(
-      button: true,
-      label: AccessibilityUtils.getFormFieldSemantics(
-        label: 'Deadline Tugas',
-        isRequired: true,
-        value: deadlineText,
-        hint: 'Ketuk untuk membuka pemilih tanggal dan waktu deadline',
-        error: _getDeadlineError(),
-      ),
-      onTap: _selectDeadline,
-      child: AccessibilityUtils.ensureMinTouchTarget(
-        child: InkWell(
-          onTap: _selectDeadline,
-          borderRadius: BorderRadius.circular(8),
-          child: InputDecorator(
+  /// Build field untuk deskripsi tugas dengan styling modern
+  Widget _buildDescriptionField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.description_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Deskripsi Tugas',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '(Opsional)',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Semantics(
+          textField: true,
+          label: AccessibilityUtils.getFormFieldSemantics(
+            label: 'Deskripsi Tugas',
+            isRequired: false,
+            value: _descriptionController.text,
+            hint: 'Masukkan deskripsi tugas, maksimal 500 karakter, opsional',
+          ),
+          child: TextFormField(
+            controller: _descriptionController,
+            focusNode: _descriptionFocusNode,
             decoration: InputDecoration(
-              labelText: 'Deadline *',
-              hintText: 'Pilih tanggal deadline',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.calendar_today, size: 24),
-              suffixIcon: _selectedDeadline != null
-                  ? AccessibilityUtils.ensureMinTouchTarget(
-                      child: Semantics(
-                        button: true,
-                        label: AccessibilityUtils.clearDateLabel,
-                        hint: 'Hapus tanggal deadline yang dipilih',
-                        onTap: () {
-                          setState(() {
-                            _selectedDeadline = null;
-                          });
-                          AccessibilityUtils.announceMessage(
-                            'Deadline dihapus',
-                          );
-                        },
-                        child: IconButton(
-                          icon: const Icon(Icons.clear, size: 24),
-                          onPressed: () {
-                            setState(() {
-                              _selectedDeadline = null;
-                            });
-                            AccessibilityUtils.announceMessage(
-                              'Deadline dihapus',
-                            );
-                          },
-                        ),
-                      ),
-                    )
-                  : null,
-              errorText: _getDeadlineError(),
+              hintText:
+                  'Jelaskan detail tugas, instruksi khusus, atau catatan penting...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.grey[50],
+              alignLabelWithHint: true,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 16,
               ),
             ),
-            child: Text(
-              deadlineText,
+            style: const TextStyle(fontSize: 16, height: 1.4),
+            maxLines: 4,
+            maxLength: 500,
+            textInputAction: TextInputAction.newline,
+            validator: (value) {
+              if (value != null && value.length > 500) {
+                return 'Deskripsi maksimal 500 karakter';
+              }
+              return null;
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build field untuk deadline dengan DatePicker modern
+  Widget _buildDeadlineField() {
+    final deadlineText = _selectedDeadline != null
+        ? _formatDeadline(_selectedDeadline!)
+        : 'Pilih tanggal dan waktu deadline';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.schedule_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Deadline',
               style: TextStyle(
                 fontSize: 16,
-                height: 1.3,
-                color: _selectedDeadline != null
-                    ? Theme.of(context).textTheme.bodyLarge?.color
-                    : Theme.of(context).hintColor,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '*',
+              style: TextStyle(
+                color: Colors.red,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Semantics(
+          button: true,
+          label: AccessibilityUtils.getFormFieldSemantics(
+            label: 'Deadline Tugas',
+            isRequired: true,
+            value: deadlineText,
+            hint: 'Ketuk untuk membuka pemilih tanggal dan waktu deadline',
+            error: _getDeadlineError(),
+          ),
+          onTap: _selectDeadline,
+          child: AccessibilityUtils.ensureMinTouchTarget(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _getDeadlineError() != null
+                      ? Colors.red
+                      : Colors.grey[300]!,
+                  width: _getDeadlineError() != null ? 2 : 1,
+                ),
+                color: Colors.grey[50],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: _selectDeadline,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _selectedDeadline != null
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.calendar_today,
+                            size: 20,
+                            color: _selectedDeadline != null
+                                ? Theme.of(context).colorScheme.primary
+                                : Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedDeadline != null
+                                    ? 'Deadline dipilih'
+                                    : 'Pilih Deadline',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                deadlineText,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _selectedDeadline != null
+                                      ? Theme.of(
+                                          context,
+                                        ).textTheme.bodyLarge?.color
+                                      : Colors.grey[500],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (_selectedDeadline != null)
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: AccessibilityUtils.ensureMinTouchTarget(
+                              child: Semantics(
+                                button: true,
+                                label: AccessibilityUtils.clearDateLabel,
+                                hint: 'Hapus tanggal deadline yang dipilih',
+                                onTap: () {
+                                  setState(() {
+                                    _selectedDeadline = null;
+                                  });
+                                  AccessibilityUtils.announceMessage(
+                                    'Deadline dihapus',
+                                  );
+                                },
+                                child: IconButton(
+                                  icon: const Icon(Icons.clear, size: 20),
+                                  color: Colors.red,
+                                  onPressed: () {
+                                    setState(() {
+                                      _selectedDeadline = null;
+                                    });
+                                    AccessibilityUtils.announceMessage(
+                                      'Deadline dihapus',
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
+        ),
+        if (_getDeadlineError() != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _getDeadlineError()!,
+            style: TextStyle(color: Colors.red, fontSize: 12),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Build tombol simpan utama dengan styling modern
+  Widget _buildSaveButton() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: _isLoading ? null : _handleSave,
+        icon: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.save_outlined, size: 20),
+        label: Text(
+          _isLoading ? 'Menyimpan Tugas...' : 'Simpan Tugas',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 0,
         ),
       ),
     );
   }
 
-  /// Build tombol simpan utama
-  Widget _buildSaveButton() {
-    return ElevatedButton.icon(
-      onPressed: _isLoading ? null : _handleSave,
-      icon: _isLoading
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.save),
-      label: Text(_isLoading ? 'Menyimpan...' : 'Simpan Tugas'),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-
-  /// Build tombol cancel
+  /// Build tombol cancel dengan styling modern
   Widget _buildCancelButton() {
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _handleCancel,
-      icon: const Icon(Icons.cancel_outlined),
-      label: const Text('Batal'),
+      icon: const Icon(Icons.close_outlined, size: 20),
+      label: const Text(
+        'Batal',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+      ),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        textStyle: const TextStyle(fontSize: 16),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        side: BorderSide(color: Colors.grey[400]!, width: 1.5),
       ),
     );
   }
