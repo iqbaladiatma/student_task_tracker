@@ -9,6 +9,18 @@ import '../utils/accessibility_utils.dart';
 import '../utils/performance_utils.dart';
 import '../widgets/filter_chips.dart';
 import '../widgets/task_card.dart';
+// Pastikan Task di-impor
+
+// --- Palet Warna Modern ---
+const Color primaryColor = Color(0xFF0A57E7); // Biru Kuat
+const Color primaryColorLight = Color(0xFF4285F4); // Biru Lebih Terang
+const Color accentColorRed = Color(0xFFD32F2F); // Merah Kuat
+const Color completedColor = Color(0xFF388E3C); // Hijau
+const Color pendingColor = Color(0xFFF57C00); // Oranye
+const Color backgroundColor = Color(0xFFF4F6F8); // Latar Belakang Abu-abu Muda
+const Color textColorPrimary = Color(0xFF212121); // Hitam Pekat
+const Color textColorSecondary = Color(0xFF757575); // Abu-abu
+// ---
 
 /// HomeView sebagai main screen aplikasi Student Task Tracker
 /// Menampilkan daftar tugas dengan filter, search, dan navigasi ke form tugas
@@ -80,6 +92,7 @@ class _HomeViewState extends State<HomeView> {
     final taskController = Get.find<TaskController>();
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: _buildAppBar(taskController),
       body: AccessibilityUtils.createSemanticWidget(
         label: 'Daftar tugas utama',
@@ -99,7 +112,13 @@ class _HomeViewState extends State<HomeView> {
             Expanded(
               child: AccessibilityUtils.createSemanticWidget(
                 label: 'Daftar tugas',
-                child: _buildTaskList(taskController),
+                child: Obx(() {
+                  // AnimatedSwitcher untuk transisi halus antar state
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _buildTaskList(taskController),
+                  );
+                }),
               ),
             ),
           ],
@@ -112,9 +131,21 @@ class _HomeViewState extends State<HomeView> {
   /// Build AppBar dengan search functionality
   PreferredSizeWidget _buildAppBar(TaskController controller) {
     return AppBar(
-      title: _isSearching ? _buildSearchField(controller) : _buildTitle(),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      elevation: 2,
+      title: _isSearching
+          ? _buildSearchField(controller)
+          : _buildTitle(),
+      // Gradasi biru modern
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primaryColor, primaryColorLight],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent, // Latar belakang AppBar transparan
+      elevation: 0, // Hilangkan shadow bawaan
       actions: [
         // Search toggle button dengan accessibility
         AccessibilityUtils.ensureMinTouchTarget(
@@ -128,9 +159,9 @@ class _HomeViewState extends State<HomeView> {
                 : 'Buka pencarian untuk mencari tugas',
             onTap: () => _toggleSearch(controller),
             child: IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              icon: Icon(_isSearching ? Icons.close : Icons.search,
+                  color: Colors.white, size: 28),
               onPressed: () => _toggleSearch(controller),
-              iconSize: 28,
             ),
           ),
         ),
@@ -144,9 +175,8 @@ class _HomeViewState extends State<HomeView> {
             onTap: () => controller.refresh(),
             child: IconButton(
               focusNode: _refreshButtonFocusNode,
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 28),
               onPressed: () => controller.refresh(),
-              iconSize: 28,
             ),
           ),
         ),
@@ -161,7 +191,8 @@ class _HomeViewState extends State<HomeView> {
       label: 'Student Task Tracker - Aplikasi Pencatat Tugas',
       child: const Text(
         'Student Task Tracker',
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
+        style: TextStyle(
+            fontWeight: FontWeight.bold, fontSize: 22, color: Colors.white),
       ),
     );
   }
@@ -183,7 +214,7 @@ class _HomeViewState extends State<HomeView> {
           border: InputBorder.none,
           hintStyle: TextStyle(color: Colors.white70),
         ),
-        style: const TextStyle(color: Colors.white, fontSize: 16),
+        style: const TextStyle(color: Colors.white, fontSize: 18),
         onChanged: (query) {
           // Performance optimization: Debounced search
           _searchDebounceTimer?.cancel();
@@ -218,42 +249,45 @@ class _HomeViewState extends State<HomeView> {
 
   /// Build daftar tugas dengan ListView
   Widget _buildTaskList(TaskController controller) {
-    return Obx(() {
-      // Loading state
-      if (controller.isLoading) {
-        return _buildLoadingState();
-      }
+    // Loading state
+    if (controller.isLoading) {
+      return _buildLoadingState();
+    }
 
-      // Error state
-      if (controller.errorMessage.isNotEmpty) {
-        return _buildErrorState(controller);
-      }
+    // Error state
+    if (controller.errorMessage.isNotEmpty) {
+      return _buildErrorState(controller);
+    }
 
-      // Empty state
-      if (controller.filteredTasks.isEmpty) {
-        return _buildEmptyState(controller);
-      }
+    // Empty state
+    if (controller.filteredTasks.isEmpty) {
+      return _buildEmptyState(controller);
+    }
 
-      // Task list
-      return _buildTaskListView(controller);
-    });
+    // Task list
+    return _buildTaskListView(controller);
   }
 
   /// Build loading state
   Widget _buildLoadingState() {
     return Center(
+      key: const ValueKey('loading'), // Key untuk AnimatedSwitcher
       child: Semantics(
         label: AccessibilityUtils.getLoadingSemantics('memuat daftar tugas'),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(semanticsLabel: 'Sedang memuat'),
+            const CircularProgressIndicator(
+              semanticsLabel: 'Sedang memuat',
+              valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+            ),
             const SizedBox(height: 16),
             Text(
               'Memuat tugas...',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: Colors.grey),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: textColorSecondary),
             ),
           ],
         ),
@@ -264,6 +298,7 @@ class _HomeViewState extends State<HomeView> {
   /// Build error state
   Widget _buildErrorState(TaskController controller) {
     return Center(
+      key: const ValueKey('error'), // Key untuk AnimatedSwitcher
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Semantics(
@@ -278,48 +313,51 @@ class _HomeViewState extends State<HomeView> {
               Icon(
                 Icons.error_outline,
                 size: 64,
-                color: Colors.red[300],
-                semanticLabel: 'Ikon error',
+                color: accentColorRed.withOpacity(0.7),
               ),
               const SizedBox(height: 16),
               Text(
                 'Terjadi Kesalahan',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.red[700],
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: accentColorRed,
+                      fontWeight: FontWeight.w600,
+                    ),
               ).asSemanticHeader(label: 'Terjadi Kesalahan'),
               const SizedBox(height: 8),
               Text(
                 controller.errorMessage,
                 textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: textColorSecondary),
               ),
               const SizedBox(height: 24),
               AccessibilityUtils.ensureMinTouchTarget(
-                child:
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        controller.clearError();
-                        controller.refresh();
-                        AccessibilityUtils.announceMessage(
-                          'Mencoba memuat ulang daftar tugas',
-                        );
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Coba Lagi'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                      ),
-                    ).asSemanticButton(
-                      label: 'Coba Lagi',
-                      hint: 'Muat ulang daftar tugas setelah error',
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    controller.clearError();
+                    controller.refresh();
+                    AccessibilityUtils.announceMessage(
+                      'Mencoba memuat ulang daftar tugas',
+                    );
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Coba Lagi'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: accentColorRed,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
                     ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ).asSemanticButton(
+                  label: 'Coba Lagi',
+                  hint: 'Muat ulang daftar tugas setelah error',
+                ),
               ),
             ],
           ),
@@ -336,6 +374,7 @@ class _HomeViewState extends State<HomeView> {
     final subtitle = _getEmptyStateSubtitle(isSearching, hasFilter);
 
     return Center(
+      key: const ValueKey('empty'), // Key untuk AnimatedSwitcher
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Semantics(
@@ -361,78 +400,82 @@ class _HomeViewState extends State<HomeView> {
               Text(
                 title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w600,
-                ),
+                      color: textColorPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
               ).asSemanticHeader(label: title),
               const SizedBox(height: 8),
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: textColorSecondary),
               ),
               const SizedBox(height: 24),
               if (!isSearching && !hasFilter) ...[
                 AccessibilityUtils.ensureMinTouchTarget(
-                  child:
-                      ElevatedButton.icon(
-                        onPressed: () => _navigateToAddTask(),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Tambah Tugas Pertama'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        ),
-                      ).asSemanticButton(
-                        label: 'Tambah Tugas Pertama',
-                        hint: 'Buat tugas pertama Anda untuk memulai',
+                  child: ElevatedButton.icon(
+                    onPressed: () => _navigateToAddTask(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tambah Tugas Pertama'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
                       ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ).asSemanticButton(
+                    label: 'Tambah Tugas Pertama',
+                    hint: 'Buat tugas pertama Anda untuk memulai',
+                  ),
                 ),
               ] else if (isSearching) ...[
                 AccessibilityUtils.ensureMinTouchTarget(
-                  child:
-                      TextButton.icon(
-                        onPressed: () => _clearSearch(controller),
-                        icon: const Icon(Icons.clear),
-                        label: const Text('Hapus Pencarian'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        ),
-                      ).asSemanticButton(
-                        label: 'Hapus Pencarian',
-                        hint:
-                            'Hapus kata kunci pencarian dan tampilkan semua tugas',
+                  child: TextButton.icon(
+                    onPressed: () => _clearSearch(controller),
+                    icon: const Icon(Icons.clear, color: primaryColor),
+                    label:
+                        const Text('Hapus Pencarian', style: TextStyle(color: primaryColor)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
                       ),
+                    ),
+                  ).asSemanticButton(
+                    label: 'Hapus Pencarian',
+                    hint:
+                        'Hapus kata kunci pencarian dan tampilkan semua tugas',
+                  ),
                 ),
               ] else if (hasFilter) ...[
                 AccessibilityUtils.ensureMinTouchTarget(
-                  child:
-                      TextButton.icon(
-                        onPressed: () {
-                          controller.setFilter(TaskFilter.all);
-                          AccessibilityUtils.announceMessage(
-                            'Filter dihapus, menampilkan semua tugas',
-                          );
-                        },
-                        icon: const Icon(Icons.clear_all),
-                        label: const Text('Hapus Filter'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        ),
-                      ).asSemanticButton(
-                        label: 'Hapus Filter',
-                        hint: 'Hapus filter dan tampilkan semua tugas',
+                  child: TextButton.icon(
+                    onPressed: () {
+                      controller.setFilter(TaskFilter.all);
+                      AccessibilityUtils.announceMessage(
+                        'Filter dihapus, menampilkan semua tugas',
+                      );
+                    },
+                    icon: const Icon(Icons.clear_all, color: primaryColor),
+                    label: const Text('Hapus Filter',
+                        style: TextStyle(color: primaryColor)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
                       ),
+                    ),
+                  ).asSemanticButton(
+                    label: 'Hapus Filter',
+                    hint: 'Hapus filter dan tampilkan semua tugas',
+                  ),
                 ),
               ],
             ],
@@ -445,6 +488,7 @@ class _HomeViewState extends State<HomeView> {
   /// Build ListView untuk menampilkan daftar tugas
   Widget _buildTaskListView(TaskController controller) {
     return Semantics(
+      key: const ValueKey('list'), // Key untuk AnimatedSwitcher
       label: 'Daftar ${controller.filteredTasks.length} tugas',
       hint: 'Geser ke bawah untuk muat ulang, ketuk tugas untuk edit',
       child: RefreshIndicator(
@@ -455,39 +499,43 @@ class _HomeViewState extends State<HomeView> {
             'Daftar tugas berhasil dimuat ulang',
           );
         },
-        child: ListView.builder(
-          padding: const EdgeInsets.only(bottom: 80), // Space for FAB
-          itemCount: controller.filteredTasks.length,
-          // Performance optimization: Set estimated item extent for better scrolling
-          itemExtent: PerformanceUtils.listItemExtent,
-          // Performance optimization: Cache extent for smoother scrolling
-          cacheExtent: PerformanceUtils.listCacheExtent,
-          itemBuilder: (context, index) {
-            final task = controller.filteredTasks[index];
-            return AnimationConfiguration.staggeredList(
-              position: index,
-              duration: const Duration(milliseconds: 375),
-              child: SlideAnimation(
-                verticalOffset: 50.0,
-                child: FadeInAnimation(
-                  child: Semantics(
-                    sortKey: OrdinalSortKey(index.toDouble()),
-                    child: TaskCard(
-                      task: task,
-                      onTap: () => _navigateToEditTask(task.id),
-                      onEdit: () => _navigateToEditTask(task.id),
-                      onDelete: () => _deleteTask(controller, task.id),
+        color: primaryColor, // Warna refresh indicator
+        child: AnimationLimiter(
+          // Tambahkan AnimationLimiter
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 90, top: 8), // Space for FAB
+            itemCount: controller.filteredTasks.length,
+            // Performance optimization: Set estimated item extent for better scrolling
+            // itemExtent: PerformanceUtils.listItemExtent, // Hapus itemExtent untuk tinggi dinamis
+            // Performance optimization: Cache extent for smoother scrolling
+            cacheExtent: PerformanceUtils.listCacheExtent,
+            itemBuilder: (context, index) {
+              final task = controller.filteredTasks[index];
+              return AnimationConfiguration.staggeredList(
+                position: index,
+                duration: const Duration(milliseconds: 375),
+                child: SlideAnimation(
+                  verticalOffset: 50.0,
+                  child: FadeInAnimation(
+                    child: Semantics(
+                      sortKey: OrdinalSortKey(index.toDouble()),
+                      child: TaskCard(
+                        task: task,
+                        onTap: () => _navigateToEditTask(task.id),
+                        onEdit: () => _navigateToEditTask(task.id),
+                        onDelete: () => _handleDeleteTask(controller, task.id),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-          // Accessibility improvements untuk ListView
-          semanticChildCount: controller.filteredTasks.length,
-          // Performance optimization: Add physics for better scrolling
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
+              );
+            },
+            // Accessibility improvements untuk ListView
+            semanticChildCount: controller.filteredTasks.length,
+            // Performance optimization: Add physics for better scrolling
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
           ),
         ),
       ),
@@ -505,20 +553,18 @@ class _HomeViewState extends State<HomeView> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+              primaryColor.withOpacity(0.1),
+              Colors.white.withOpacity(0.1),
             ],
           ),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            color: primaryColor.withOpacity(0.2),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
+              color: primaryColor.withOpacity(0.1),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -532,14 +578,12 @@ class _HomeViewState extends State<HomeView> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.15),
+                    color: primaryColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.assignment_outlined,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: primaryColor,
                     size: 24,
                   ),
                 ),
@@ -551,16 +595,17 @@ class _HomeViewState extends State<HomeView> {
                       Text(
                         'Tugas Anda',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _getGreetingMessage(),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: textColorSecondary),
                       ),
                     ],
                   ),
@@ -575,7 +620,7 @@ class _HomeViewState extends State<HomeView> {
                     'Total',
                     controller.totalTasks.toString(),
                     Icons.list_alt,
-                    Colors.blue,
+                    primaryColor,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -584,7 +629,7 @@ class _HomeViewState extends State<HomeView> {
                     'Selesai',
                     controller.completedTasks.toString(),
                     Icons.check_circle,
-                    Colors.green,
+                    completedColor,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -593,7 +638,7 @@ class _HomeViewState extends State<HomeView> {
                     'Pending',
                     controller.pendingTasks.toString(),
                     Icons.pending_actions,
-                    Colors.orange,
+                    pendingColor,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -602,7 +647,7 @@ class _HomeViewState extends State<HomeView> {
                     'Terlambat',
                     controller.overdueTasks.toString(),
                     Icons.warning,
-                    Colors.red,
+                    accentColorRed,
                   ),
                 ),
               ],
@@ -623,9 +668,9 @@ class _HomeViewState extends State<HomeView> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Column(
         children: [
@@ -644,7 +689,7 @@ class _HomeViewState extends State<HomeView> {
             label,
             style: TextStyle(
               fontSize: 11,
-              color: color.withValues(alpha: 0.8),
+              color: color.withOpacity(0.8),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -672,11 +717,16 @@ class _HomeViewState extends State<HomeView> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            color: primaryColor.withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
         ],
+        gradient: const LinearGradient(
+          colors: [primaryColorLight, primaryColor],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       ),
       child: Semantics(
         button: true,
@@ -687,7 +737,7 @@ class _HomeViewState extends State<HomeView> {
           focusNode: _fabFocusNode,
           onPressed: _navigateToAddTask,
           tooltip: AccessibilityUtils.addTaskButtonLabel,
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: Colors.transparent, // Transparan untuk gradasi
           foregroundColor: Colors.white,
           elevation: 0,
           icon: const Icon(Icons.add, size: 24, semanticLabel: 'Tambah'),
@@ -740,6 +790,7 @@ class _HomeViewState extends State<HomeView> {
   /// Navigate to add task screen
   void _navigateToAddTask() {
     AccessibilityUtils.announceMessage('Membuka form tambah tugas');
+    // Hapus parameter 'transition'
     Get.toNamed(AppRoutes.addTask);
   }
 
@@ -752,6 +803,7 @@ class _HomeViewState extends State<HomeView> {
       AccessibilityUtils.announceMessage(
         'Membuka form edit tugas ${task.title}',
       );
+      // Hapus parameter 'transition'
       Get.toNamed(AppRoutes.editTask, arguments: task);
     } else {
       AccessibilityUtils.announceMessage('Error: Tugas tidak ditemukan');
@@ -759,14 +811,15 @@ class _HomeViewState extends State<HomeView> {
         'Error',
         'Tugas tidak ditemukan',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: accentColorRed,
         colorText: Colors.white,
       );
     }
   }
 
-  /// Delete task with confirmation
-  Future<void> _deleteTask(TaskController controller, String taskId) async {
+  /// Delete task (dipanggil oleh TaskCard)
+  Future<void> _handleDeleteTask(
+      TaskController controller, String taskId) async {
     final task = controller.getTaskById(taskId);
     final taskTitle = task?.title ?? 'tugas';
 
@@ -779,7 +832,7 @@ class _HomeViewState extends State<HomeView> {
         'Berhasil',
         'Tugas berhasil dihapus',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
+        backgroundColor: completedColor,
         colorText: Colors.white,
       );
     } else {
@@ -791,7 +844,7 @@ class _HomeViewState extends State<HomeView> {
         'Error',
         errorMsg,
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: accentColorRed,
         colorText: Colors.white,
       );
     }
@@ -819,3 +872,4 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 }
+

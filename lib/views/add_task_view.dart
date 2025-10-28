@@ -7,6 +7,19 @@ import '../model/task.dart';
 import '../routes/app_routes.dart';
 import '../utils/accessibility_utils.dart';
 
+// --- Palet Warna Modern (diimpor/didefinisikan ulang untuk konsistensi) ---
+// Sebaiknya, konstanta ini diletakkan di file terpisah (misalnya, color_constants.dart)
+// dan diimpor. Untuk tujuan contoh ini, saya mendefinisikannya langsung.
+const Color primaryColor = Color(0xFF0A57E7); // Biru Kuat
+const Color primaryColorLight = Color(0xFF4285F4); // Biru Lebih Terang
+const Color accentColorRed = Color(0xFFD32F2F); // Merah Kuat
+const Color completedColor = Color(0xFF388E3C); // Hijau
+const Color pendingColor = Color(0xFFF57C00); // Oranye
+const Color backgroundColor = Color(0xFFF4F6F8); // Latar Belakang Abu-abu Muda
+const Color textColorPrimary = Color(0xFF212121); // Hitam Pekat
+const Color textColorSecondary = Color(0xFF757575); // Abu-abu
+// ---
+
 /// AddTaskView untuk menambah tugas baru
 /// Menyediakan form dengan validasi untuk input data tugas
 class AddTaskView extends StatefulWidget {
@@ -50,6 +63,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundColor, // Menggunakan warna latar belakang
       appBar: _buildAppBar(),
       body: AccessibilityUtils.createSemanticWidget(
         label: 'Form tambah tugas baru',
@@ -65,9 +79,24 @@ class _AddTaskViewState extends State<AddTaskView> {
       title: AccessibilityUtils.createSemanticWidget(
         header: true,
         label: 'Tambah Tugas Baru',
-        child: const Text('Tambah Tugas Baru'),
+        child: const Text(
+          'Tambah Tugas Baru',
+          style: TextStyle(color: Colors.white), // Warna teks putih
+        ),
       ),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      // Gradasi biru modern
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primaryColor, primaryColorLight],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent, // Latar belakang AppBar transparan
+      elevation: 0,
+      iconTheme: const IconThemeData(color: Colors.white), // Warna icon putih
       leading: AccessibilityUtils.ensureMinTouchTarget(
         child: Semantics(
           button: true,
@@ -97,6 +126,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                   horizontal: 20,
                   vertical: 16,
                 ),
+                foregroundColor: Colors.white, // Warna teks tombol putih
               ),
               child: _isLoading
                   ? const SizedBox(
@@ -104,6 +134,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                       height: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
+                        color: Colors.white, // Warna loading putih
                         semanticsLabel: 'Menyimpan tugas',
                       ),
                     )
@@ -142,13 +173,13 @@ class _AddTaskViewState extends State<AddTaskView> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
                 border: Border.all(
-                  color: Colors.grey.withValues(alpha: 0.2),
+                  color: Colors.grey.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -185,13 +216,13 @@ class _AddTaskViewState extends State<AddTaskView> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+            primaryColor.withOpacity(0.1),
+            primaryColor.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+          color: primaryColor.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -200,14 +231,12 @@ class _AddTaskViewState extends State<AddTaskView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.15),
+              color: primaryColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.add_task,
-              color: Theme.of(context).colorScheme.primary,
+              color: primaryColor,
               size: 24,
             ),
           ),
@@ -219,16 +248,17 @@ class _AddTaskViewState extends State<AddTaskView> {
                 Text(
                   'Buat Tugas Baru',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Isi detail tugas yang ingin Anda buat',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: textColorSecondary),
                 ),
               ],
             ),
@@ -253,25 +283,25 @@ class _AddTaskViewState extends State<AddTaskView> {
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.assignment_outlined,
-                color: Theme.of(context).colorScheme.primary,
+                color: primaryColor,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
+              const Text(
                 'Judul Tugas',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: primaryColor,
                 ),
               ),
               const SizedBox(width: 4),
-              Text(
+              const Text(
                 '*',
                 style: TextStyle(
-                  color: Colors.red,
+                  color: accentColorRed,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -294,8 +324,8 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
+                borderSide: const BorderSide(
+                  color: primaryColor,
                   width: 2,
                 ),
               ),
@@ -306,7 +336,11 @@ class _AddTaskViewState extends State<AddTaskView> {
                 vertical: 16,
               ),
             ),
-            style: const TextStyle(fontSize: 16, height: 1.3),
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.3,
+              color: textColorPrimary, // Diubah menjadi hitam
+            ),
             maxLength: 100,
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
@@ -335,25 +369,25 @@ class _AddTaskViewState extends State<AddTaskView> {
       children: [
         Row(
           children: [
-            Icon(
+            const Icon(
               Icons.school_outlined,
-              color: Theme.of(context).colorScheme.primary,
+              color: primaryColor,
               size: 20,
             ),
             const SizedBox(width: 8),
-            Text(
+            const Text(
               'Mata Pelajaran',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
+                color: primaryColor,
               ),
             ),
             const SizedBox(width: 4),
-            Text(
+            const Text(
               '*',
               style: TextStyle(
-                color: Colors.red,
+                color: accentColorRed,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -384,8 +418,8 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
+                borderSide: const BorderSide(
+                  color: primaryColor,
                   width: 2,
                 ),
               ),
@@ -396,7 +430,11 @@ class _AddTaskViewState extends State<AddTaskView> {
                 vertical: 16,
               ),
             ),
-            style: const TextStyle(fontSize: 16, height: 1.3),
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.3,
+              color: textColorPrimary, // Diubah menjadi hitam
+            ),
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (_) => _descriptionFocusNode.requestFocus(),
             validator: (value) {
@@ -412,9 +450,9 @@ class _AddTaskViewState extends State<AddTaskView> {
           Text(
             'Pilih dari mata pelajaran yang sudah ada:',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
+                  fontWeight: FontWeight.w500,
+                  color: textColorSecondary,
+                ),
           ),
           const SizedBox(height: 8),
           Semantics(
@@ -427,63 +465,62 @@ class _AddTaskViewState extends State<AddTaskView> {
               children: existingSubjects.take(5).map((subject) {
                 final color = _getSubjectColor(subject);
                 return AccessibilityUtils.ensureMinTouchTarget(
-                  child:
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              color.withValues(alpha: 0.1),
-                              color.withValues(alpha: 0.05),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          color.withOpacity(0.1),
+                          color.withOpacity(0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: color.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        onTap: () {
+                          _subjectController.text = subject;
+                          AccessibilityUtils.announceMessage(
+                            'Mata pelajaran $subject dipilih',
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.school_outlined,
+                                size: 16,
+                                color: color,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                subject,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: color,
+                                ),
+                              ),
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: color.withValues(alpha: 0.3),
-                            width: 1.5,
-                          ),
                         ),
-                        child: Material(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
-                          child: InkWell(
-                            onTap: () {
-                              _subjectController.text = subject;
-                              AccessibilityUtils.announceMessage(
-                                'Mata pelajaran $subject dipilih',
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.school_outlined,
-                                    size: 16,
-                                    color: color,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    subject,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: color,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ).asSemanticButton(
-                        label: 'Pilih mata pelajaran $subject',
-                        hint: 'Ketuk untuk menggunakan mata pelajaran $subject',
                       ),
+                    ),
+                  ).asSemanticButton(
+                    label: 'Pilih mata pelajaran $subject',
+                    hint: 'Ketuk untuk menggunakan mata pelajaran $subject',
+                  ),
                 );
               }).toList(),
             ),
@@ -497,10 +534,10 @@ class _AddTaskViewState extends State<AddTaskView> {
   Color _getSubjectColor(String subject) {
     final hash = subject.hashCode;
     final colors = [
-      Colors.blue,
-      Colors.green,
+      primaryColor, // Menggunakan warna dari palet yang baru
+      completedColor,
       Colors.purple,
-      Colors.orange,
+      pendingColor,
       Colors.teal,
       Colors.indigo,
       Colors.pink,
@@ -516,18 +553,18 @@ class _AddTaskViewState extends State<AddTaskView> {
       children: [
         Row(
           children: [
-            Icon(
+            const Icon(
               Icons.description_outlined,
-              color: Theme.of(context).colorScheme.primary,
+              color: primaryColor,
               size: 20,
             ),
             const SizedBox(width: 8),
-            Text(
+            const Text(
               'Deskripsi Tugas',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
+                color: primaryColor,
               ),
             ),
             const SizedBox(width: 4),
@@ -566,8 +603,8 @@ class _AddTaskViewState extends State<AddTaskView> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
+                borderSide: const BorderSide(
+                  color: primaryColor,
                   width: 2,
                 ),
               ),
@@ -579,7 +616,11 @@ class _AddTaskViewState extends State<AddTaskView> {
                 vertical: 16,
               ),
             ),
-            style: const TextStyle(fontSize: 16, height: 1.4),
+            style: const TextStyle(
+              fontSize: 16,
+              height: 1.4,
+              color: textColorPrimary, // Diubah menjadi hitam
+            ),
             maxLines: 4,
             maxLength: 500,
             textInputAction: TextInputAction.newline,
@@ -606,25 +647,25 @@ class _AddTaskViewState extends State<AddTaskView> {
       children: [
         Row(
           children: [
-            Icon(
+            const Icon(
               Icons.schedule_outlined,
-              color: Theme.of(context).colorScheme.primary,
+              color: primaryColor,
               size: 20,
             ),
             const SizedBox(width: 8),
-            Text(
+            const Text(
               'Deadline',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
+                color: primaryColor,
               ),
             ),
             const SizedBox(width: 4),
-            Text(
+            const Text(
               '*',
               style: TextStyle(
-                color: Colors.red,
+                color: accentColorRed,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -648,7 +689,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: _getDeadlineError() != null
-                      ? Colors.red
+                      ? accentColorRed
                       : Colors.grey[300]!,
                   width: _getDeadlineError() != null ? 2 : 1,
                 ),
@@ -668,17 +709,15 @@ class _AddTaskViewState extends State<AddTaskView> {
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: _selectedDeadline != null
-                                ? Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withValues(alpha: 0.1)
-                                : Colors.grey.withValues(alpha: 0.1),
+                                ? primaryColor.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
                             Icons.calendar_today,
                             size: 20,
                             color: _selectedDeadline != null
-                                ? Theme.of(context).colorScheme.primary
+                                ? primaryColor
                                 : Colors.grey[600],
                           ),
                         ),
@@ -704,9 +743,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
                                   color: _selectedDeadline != null
-                                      ? Theme.of(
-                                          context,
-                                        ).textTheme.bodyLarge?.color
+                                      ? textColorPrimary
                                       : Colors.grey[500],
                                 ),
                               ),
@@ -716,7 +753,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                         if (_selectedDeadline != null)
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.red.withValues(alpha: 0.1),
+                              color: accentColorRed.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: AccessibilityUtils.ensureMinTouchTarget(
@@ -734,7 +771,7 @@ class _AddTaskViewState extends State<AddTaskView> {
                                 },
                                 child: IconButton(
                                   icon: const Icon(Icons.clear, size: 20),
-                                  color: Colors.red,
+                                  color: accentColorRed,
                                   onPressed: () {
                                     setState(() {
                                       _selectedDeadline = null;
@@ -759,7 +796,7 @@ class _AddTaskViewState extends State<AddTaskView> {
           const SizedBox(height: 8),
           Text(
             _getDeadlineError()!,
-            style: TextStyle(color: Colors.red, fontSize: 12),
+            style: const TextStyle(color: accentColorRed, fontSize: 12),
           ),
         ],
       ],
@@ -773,7 +810,7 @@ class _AddTaskViewState extends State<AddTaskView> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+            color: primaryColor.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -796,7 +833,7 @@ class _AddTaskViewState extends State<AddTaskView> {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
@@ -812,15 +849,21 @@ class _AddTaskViewState extends State<AddTaskView> {
   Widget _buildCancelButton() {
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _handleCancel,
-      icon: const Icon(Icons.close_outlined, size: 20),
+      icon:
+          const Icon(Icons.close_outlined, size: 20, color: textColorSecondary),
       label: const Text(
         'Batal',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: textColorSecondary,
+        ),
       ),
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: BorderSide(color: Colors.grey[400]!, width: 1.5),
+        foregroundColor: textColorSecondary,
       ),
     );
   }
@@ -838,6 +881,23 @@ class _AddTaskViewState extends State<AddTaskView> {
       helpText: 'Pilih Deadline',
       cancelText: 'Batal',
       confirmText: 'Pilih',
+      builder: (context, child) {
+        // Ganti warna DatePicker
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: primaryColor, // Warna header dan tombol utama
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: textColorPrimary,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: primaryColor),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (selectedDate != null) {
@@ -852,6 +912,23 @@ class _AddTaskViewState extends State<AddTaskView> {
         helpText: 'Pilih Waktu Deadline',
         cancelText: 'Batal',
         confirmText: 'Pilih',
+        builder: (context, child) {
+          // Ganti warna TimePicker
+          return Theme(
+            data: ThemeData.light().copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: primaryColor, // Warna header dan tombol utama
+                onPrimary: Colors.white,
+                surface: Colors.white,
+                onSurface: textColorPrimary,
+              ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(foregroundColor: primaryColor),
+              ),
+            ),
+            child: child!,
+          );
+        },
       );
 
       if (selectedTime != null) {
@@ -864,6 +941,9 @@ class _AddTaskViewState extends State<AddTaskView> {
             selectedTime.minute,
           );
         });
+        AccessibilityUtils.announceMessage(
+          'Deadline diatur ke ${_formatDeadline(_selectedDeadline!)}',
+        );
       }
     }
   }
@@ -878,7 +958,7 @@ class _AddTaskViewState extends State<AddTaskView> {
   /// Get error message untuk deadline
   String? _getDeadlineError() {
     if (_selectedDeadline == null) {
-      return null; // Error akan ditampilkan saat validasi form
+      return null;
     }
 
     final now = DateTime.now();
@@ -896,6 +976,9 @@ class _AddTaskViewState extends State<AddTaskView> {
     // Validasi form fields
     if (!_formKey.currentState!.validate()) {
       isValid = false;
+      AccessibilityUtils.announceMessage(
+        'Validasi form gagal. Periksa kembali field yang kosong atau salah',
+      );
     }
 
     // Validasi deadline
@@ -903,7 +986,9 @@ class _AddTaskViewState extends State<AddTaskView> {
       _showErrorSnackbar('Deadline harus dipilih');
       isValid = false;
     } else if (_selectedDeadline!.isBefore(DateTime.now())) {
-      _showErrorSnackbar('Deadline tidak boleh di masa lalu');
+      // Jika deadline di masa lalu, tampilkan error
+      final errorMessage = 'Deadline tidak boleh di masa lalu';
+      _showErrorSnackbar(errorMessage);
       isValid = false;
     }
 
@@ -933,17 +1018,20 @@ class _AddTaskViewState extends State<AddTaskView> {
 
       if (success) {
         _showSuccessSnackbar('Tugas berhasil ditambahkan');
+        AccessibilityUtils.announceMessage('Tugas berhasil ditambahkan');
         // Kembali ke home dan refresh data
         Get.offAllNamed(AppRoutes.home);
       } else {
-        _showErrorSnackbar(
-          taskController.errorMessage.isNotEmpty
-              ? taskController.errorMessage
-              : 'Gagal menambahkan tugas',
-        );
+        final errorMsg = taskController.errorMessage.isNotEmpty
+            ? taskController.errorMessage
+            : 'Gagal menambahkan tugas';
+        _showErrorSnackbar(errorMsg);
+        AccessibilityUtils.announceMessage('Gagal menyimpan tugas: $errorMsg');
       }
     } catch (e) {
-      _showErrorSnackbar('Terjadi kesalahan: ${e.toString()}');
+      final errorMsg = 'Terjadi kesalahan: ${e.toString()}';
+      _showErrorSnackbar(errorMsg);
+      AccessibilityUtils.announceMessage('Error saat menyimpan tugas: $errorMsg');
     } finally {
       if (mounted) {
         setState(() {
@@ -955,8 +1043,7 @@ class _AddTaskViewState extends State<AddTaskView> {
 
   /// Handle cancel dengan konfirmasi jika ada perubahan
   void _handleCancel() {
-    final hasChanges =
-        _titleController.text.isNotEmpty ||
+    final hasChanges = _titleController.text.isNotEmpty ||
         _descriptionController.text.isNotEmpty ||
         _subjectController.text.isNotEmpty ||
         _selectedDeadline != null;
@@ -964,6 +1051,7 @@ class _AddTaskViewState extends State<AddTaskView> {
     if (hasChanges) {
       _showCancelConfirmation();
     } else {
+      AccessibilityUtils.announceMessage('Membatalkan penambahan tugas');
       Get.offAllNamed(AppRoutes.home);
     }
   }
@@ -972,19 +1060,28 @@ class _AddTaskViewState extends State<AddTaskView> {
   void _showCancelConfirmation() {
     Get.dialog(
       AlertDialog(
+        // Tema AlertDialog akan mengikuti tema Get.theme atau ThemeData.
+        // Untuk memastikan kontras tinggi, kita atur warna teks tombol.
         title: const Text('Batalkan Perubahan?'),
         content: const Text(
           'Anda memiliki perubahan yang belum disimpan. '
           'Apakah Anda yakin ingin membatalkan?',
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Tidak')),
+          TextButton(
+            onPressed: () => Get.back(),
+            // START Perubahan: Mengubah warna teks tombol 'Tidak' menjadi putih
+            child: const Text('Tidak', style: TextStyle(color: Colors.white)),
+            // END Perubahan
+          ),
           TextButton(
             onPressed: () {
               Get.back(); // Close dialog
+              AccessibilityUtils.announceMessage('Penambahan tugas dibatalkan');
               Get.offAllNamed(AppRoutes.home); // Kembali ke home
             },
-            child: const Text('Ya, Batalkan'),
+            child:
+                const Text('Ya, Batalkan', style: TextStyle(color: accentColorRed)),
           ),
         ],
       ),
@@ -997,7 +1094,7 @@ class _AddTaskViewState extends State<AddTaskView> {
       'Berhasil',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
+      backgroundColor: completedColor,
       colorText: Colors.white,
       icon: const Icon(Icons.check_circle, color: Colors.white),
       duration: const Duration(seconds: 3),
@@ -1010,7 +1107,7 @@ class _AddTaskViewState extends State<AddTaskView> {
       'Error',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
+      backgroundColor: accentColorRed,
       colorText: Colors.white,
       icon: const Icon(Icons.error, color: Colors.white),
       duration: const Duration(seconds: 4),

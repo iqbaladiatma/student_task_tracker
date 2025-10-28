@@ -5,6 +5,19 @@ import '../controllers/task_controller.dart';
 import '../model/task.dart';
 import '../routes/app_routes.dart';
 
+// --- Palet Warna Modern ---
+const Color primaryColor = Color(0xFF0A57E7); // Biru Kuat
+const Color primaryColorLight = Color(0xFF4285F4); // Biru Lebih Terang
+const Color accentColorRed = Color(0xFFD32F2F); // Merah Kuat
+const Color accentColorRedLight = Color(0xFFE57373); // Merah Lebih Terang
+const Color completedColor = Color(0xFF388E3C); // Hijau (Diperlukan untuk Snackbar)
+const Color pendingColor = Color(0xFFF57C00); // Oranye
+const Color backgroundColor = Color(0xFFF4F6F8); // Latar Belakang Abu-abu Muda
+const Color cardColor = Colors.white;
+const Color textColorPrimary = Color(0xFF212121); // Hitam Pekat
+const Color textColorSecondary = Color(0xFF757575); // Abu-abu
+// ---
+
 /// EditTaskView untuk mengubah tugas yang sudah ada
 /// Menyediakan form dengan data pre-filled dan opsi delete
 class EditTaskView extends StatefulWidget {
@@ -52,8 +65,7 @@ class _EditTaskViewState extends State<EditTaskView> {
 
   /// Callback ketika form berubah
   void _onFormChanged() {
-    final hasChanges =
-        _titleController.text != widget.task.title ||
+    final hasChanges = _titleController.text != widget.task.title ||
         _descriptionController.text != widget.task.description ||
         _subjectController.text != widget.task.subject ||
         _selectedDeadline != widget.task.deadline;
@@ -67,6 +79,9 @@ class _EditTaskViewState extends State<EditTaskView> {
 
   @override
   void dispose() {
+    _titleController.removeListener(_onFormChanged);
+    _descriptionController.removeListener(_onFormChanged);
+    _subjectController.removeListener(_onFormChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     _subjectController.dispose();
@@ -78,38 +93,73 @@ class _EditTaskViewState extends State<EditTaskView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(appBar: _buildAppBar(), body: _buildBody());
+    return Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: _buildAppBar(),
+        body: _buildBody());
   }
 
   /// Build AppBar dengan tombol cancel, save, dan delete
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Edit Tugas'),
-      backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      title: const Text('Edit Tugas',
+          style: TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+      // Gradasi biru modern
+      flexibleSpace: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primaryColor, primaryColorLight],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.close),
+        icon: const Icon(Icons.close, color: Colors.white, size: 28),
         onPressed: _handleCancel,
+        tooltip: 'Batal',
       ),
       actions: [
         // Delete button
         IconButton(
           onPressed: _isLoading ? null : _handleDelete,
-          icon: const Icon(Icons.delete_outline),
+          icon: const Icon(Icons.delete_outline, color: Colors.white, size: 28),
           tooltip: 'Hapus Tugas',
         ),
         // Save button
-        TextButton(
-          onPressed: _isLoading ? null : _handleSave,
-          child: _isLoading
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text(
-                  'Simpan',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                ),
+        Padding(
+          padding: const EdgeInsets.only(right: 12.0),
+          child: TextButton(
+            onPressed: (_isLoading || !_hasChanges) ? null : _handleSave,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              // Kontrol warna saat disable (tidak ada perubahan)
+              disabledForegroundColor: Colors.white.withOpacity(0.5),
+            ),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    'Simpan',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: _hasChanges
+                            ? Colors.white
+                            : Colors.white.withOpacity(0.5)),
+                  ),
+          ),
         ),
       ],
     );
@@ -132,17 +182,17 @@ class _EditTaskViewState extends State<EditTaskView> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Colors.black.withOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
                 ],
                 border: Border.all(
-                  color: Colors.grey.withValues(alpha: 0.2),
+                  color: Colors.grey.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -161,11 +211,11 @@ class _EditTaskViewState extends State<EditTaskView> {
             ),
 
             const SizedBox(height: 24),
-            _buildSaveButton(),
+            _buildSaveButton(), // Tombol Simpan Biru
             const SizedBox(height: 12),
-            _buildDeleteButton(),
+            _buildDeleteButton(), // Tombol Hapus Merah
             const SizedBox(height: 12),
-            _buildCancelButton(),
+            _buildCancelButton(), // Tombol Batal Outline
           ],
         ),
       ),
@@ -181,13 +231,13 @@ class _EditTaskViewState extends State<EditTaskView> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.orange.withValues(alpha: 0.1),
-            Colors.orange.withValues(alpha: 0.05),
+            primaryColor.withOpacity(0.1),
+            cardColor.withOpacity(0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.2),
+          color: primaryColor.withOpacity(0.2),
           width: 1.5,
         ),
       ),
@@ -196,12 +246,12 @@ class _EditTaskViewState extends State<EditTaskView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.15),
+              color: primaryColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               Icons.edit_outlined,
-              color: Colors.orange,
+              color: primaryColor,
               size: 24,
             ),
           ),
@@ -213,16 +263,17 @@ class _EditTaskViewState extends State<EditTaskView> {
                 Text(
                   'Edit Tugas',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Perbarui detail tugas "${widget.task.title}"',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: textColorSecondary),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -236,27 +287,60 @@ class _EditTaskViewState extends State<EditTaskView> {
 
   /// Build field untuk judul tugas
   Widget _buildTitleField() {
-    return TextFormField(
-      controller: _titleController,
-      focusNode: _titleFocusNode,
-      decoration: const InputDecoration(
-        labelText: 'Judul Tugas *',
-        hintText: 'Masukkan judul tugas',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.assignment),
-      ),
-      maxLength: 100,
-      textInputAction: TextInputAction.next,
-      onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Judul tugas tidak boleh kosong';
-        }
-        if (value.trim().length < 3) {
-          return 'Judul tugas minimal 3 karakter';
-        }
-        return null;
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Judul Tugas *',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _titleController,
+          focusNode: _titleFocusNode,
+          style: const TextStyle(
+            fontSize: 16,
+            height: 1.3,
+            color: textColorPrimary, // Teks input HITAM
+          ),
+          decoration: InputDecoration(
+            hintText: 'Masukkan judul tugas yang jelas dan deskriptif',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            prefixIcon:
+                const Icon(Icons.assignment_outlined, color: primaryColor),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: primaryColor, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          maxLength: 100,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) => _subjectFocusNode.requestFocus(),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Judul tugas tidak boleh kosong';
+            }
+            if (value.trim().length < 3) {
+              return 'Judul tugas minimal 3 karakter';
+            }
+            return null;
+          },
+        ),
+      ],
     );
   }
 
@@ -268,14 +352,41 @@ class _EditTaskViewState extends State<EditTaskView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const Text(
+          'Mata Pelajaran *',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
+          ),
+        ),
+        const SizedBox(height: 8),
         TextFormField(
           controller: _subjectController,
           focusNode: _subjectFocusNode,
-          decoration: const InputDecoration(
-            labelText: 'Mata Pelajaran *',
-            hintText: 'Masukkan mata pelajaran',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.school),
+          style: const TextStyle(
+            fontSize: 16,
+            height: 1.3,
+            color: textColorPrimary, // Teks input HITAM
+          ),
+          decoration: InputDecoration(
+            hintText: 'Contoh: Matematika, Bahasa Indonesia, Fisika',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            prefixIcon: const Icon(Icons.school_outlined, color: primaryColor),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: primaryColor, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           textInputAction: TextInputAction.next,
           onFieldSubmitted: (_) => _descriptionFocusNode.requestFocus(),
@@ -290,18 +401,42 @@ class _EditTaskViewState extends State<EditTaskView> {
           const SizedBox(height: 8),
           Text(
             'Mata pelajaran yang sudah ada:',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: textColorSecondary),
           ),
           const SizedBox(height: 4),
           Wrap(
             spacing: 8,
+            runSpacing: 4,
             children: existingSubjects.take(5).map((subject) {
+              final color = _getSubjectColor(subject);
               return ActionChip(
                 label: Text(subject),
                 onPressed: () {
                   _subjectController.text = subject;
                   _onFormChanged();
                 },
+                // START Perubahan: Mengubah background chip menjadi TRANSPARAN
+                backgroundColor: const Color.fromARGB(255, 233, 233, 233), // TRANSPARAN
+                labelStyle: TextStyle(
+                  color: color, // Teks warna subjek
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+                side: BorderSide(
+                    color: color.withOpacity(0.5),
+                    width: 1.5), // Border tetap terlihat
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                avatar: Icon(
+                  Icons.school_outlined,
+                  size: 16,
+                  color: color,
+                ),
+                // END Perubahan
               );
             }).toList(),
           ),
@@ -310,82 +445,188 @@ class _EditTaskViewState extends State<EditTaskView> {
     );
   }
 
+  /// Get warna untuk mata pelajaran berdasarkan hash
+  Color _getSubjectColor(String subject) {
+    final hash = subject.hashCode;
+    final colors = [
+      primaryColor,
+      completedColor,
+      Colors.purple,
+      pendingColor,
+      Colors.teal,
+      Colors.indigo,
+      Colors.pink,
+      Colors.brown,
+    ];
+    return colors[hash.abs() % colors.length];
+  }
+
   /// Build field untuk deskripsi tugas
   Widget _buildDescriptionField() {
-    return TextFormField(
-      controller: _descriptionController,
-      focusNode: _descriptionFocusNode,
-      decoration: const InputDecoration(
-        labelText: 'Deskripsi',
-        hintText: 'Masukkan deskripsi tugas (opsional)',
-        border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.description),
-        alignLabelWithHint: true,
-      ),
-      maxLines: 4,
-      maxLength: 500,
-      textInputAction: TextInputAction.newline,
-      validator: (value) {
-        if (value != null && value.length > 500) {
-          return 'Deskripsi maksimal 500 karakter';
-        }
-        return null;
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Deskripsi Tugas',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: primaryColor,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '(Opsional)',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _descriptionController,
+          focusNode: _descriptionFocusNode,
+          style: const TextStyle(
+            fontSize: 16,
+            height: 1.4,
+            color: textColorPrimary, // Teks input HITAM
+          ),
+          decoration: InputDecoration(
+            hintText:
+                'Jelaskan detail tugas, instruksi khusus, atau catatan penting...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            prefixIcon:
+                const Icon(Icons.description_outlined, color: primaryColor),
+            alignLabelWithHint: true,
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: primaryColor, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          maxLines: 4,
+          maxLength: 500,
+          textInputAction: TextInputAction.newline,
+          validator: (value) {
+            if (value != null && value.length > 500) {
+              return 'Deskripsi maksimal 500 karakter';
+            }
+            return null;
+          },
+        ),
+      ],
     );
   }
 
   /// Build field untuk deadline dengan DatePicker
   Widget _buildDeadlineField() {
-    return InkWell(
-      onTap: _selectDeadline,
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: 'Deadline *',
-          hintText: 'Pilih tanggal deadline',
-          border: const OutlineInputBorder(),
-          prefixIcon: const Icon(Icons.calendar_today),
-          suffixIcon: _selectedDeadline != null
-              ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    setState(() {
-                      _selectedDeadline = null;
-                    });
-                    _onFormChanged();
-                  },
-                )
-              : null,
-          errorText: _getDeadlineError(),
-        ),
-        child: Text(
-          _selectedDeadline != null
-              ? _formatDeadline(_selectedDeadline!)
-              : 'Pilih tanggal deadline',
+    final deadlineText = _selectedDeadline != null
+        ? _formatDeadline(_selectedDeadline!)
+        : 'Pilih tanggal dan waktu deadline';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Deadline *',
           style: TextStyle(
-            color: _selectedDeadline != null
-                ? Theme.of(context).textTheme.bodyLarge?.color
-                : Theme.of(context).hintColor,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: primaryColor,
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _selectDeadline,
+          borderRadius: BorderRadius.circular(12),
+          child: InputDecorator(
+            decoration: InputDecoration(
+              hintText: 'Pilih tanggal deadline',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: primaryColor, width: 2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
+              ),
+              errorText: _getDeadlineError(),
+              prefixIcon:
+                  const Icon(Icons.schedule_outlined, color: primaryColor),
+              suffixIcon: _selectedDeadline != null
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: accentColorRed),
+                      onPressed: () {
+                        setState(() {
+                          _selectedDeadline = null;
+                        });
+                        _onFormChanged();
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: Colors.grey[50],
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            child: Text(
+              deadlineText,
+              style: TextStyle(
+                color: _selectedDeadline != null
+                    ? textColorPrimary
+                    : textColorSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  /// Build tombol simpan utama dengan styling modern
+  /// Build tombol simpan utama dengan gradasi biru
   Widget _buildSaveButton() {
     return Container(
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: (_isLoading || !_hasChanges)
+              ? [
+                  primaryColor.withOpacity(0.5),
+                  primaryColorLight.withOpacity(0.5)
+                ]
+              : [primaryColorLight, primaryColor],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: primaryColor.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: ElevatedButton.icon(
-        onPressed: _isLoading ? null : _handleSave,
+        onPressed: (_isLoading || !_hasChanges) ? null : _handleSave,
         icon: _isLoading
             ? const SizedBox(
                 width: 20,
@@ -395,52 +636,64 @@ class _EditTaskViewState extends State<EditTaskView> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Icon(Icons.save_outlined, size: 20),
+            : const Icon(Icons.save_outlined, size: 20, color: Colors.white),
         label: Text(
           _isLoading ? 'Menyimpan...' : 'Simpan Perubahan',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent, // Let gradient show
+          shadowColor: Colors.transparent, // No button shadow
+          elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 0,
         ),
       ),
     );
   }
 
-  /// Build tombol delete dengan styling modern
+  /// Build tombol delete dengan gradasi merah
   Widget _buildDeleteButton() {
     return Container(
       decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _isLoading
+              ? [
+                  accentColorRedLight.withOpacity(0.5),
+                  accentColorRed.withOpacity(0.5)
+                ]
+              : [accentColorRedLight, accentColorRed],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: accentColorRed.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
       child: ElevatedButton.icon(
         onPressed: _isLoading ? null : _handleDelete,
-        icon: const Icon(Icons.delete_outline, size: 20),
+        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.white),
         label: const Text(
           'Hapus Tugas',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red,
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          elevation: 0,
         ),
       ),
     );
@@ -450,12 +703,15 @@ class _EditTaskViewState extends State<EditTaskView> {
   Widget _buildCancelButton() {
     return OutlinedButton.icon(
       onPressed: _isLoading ? null : _handleCancel,
-      icon: const Icon(Icons.close_outlined, size: 20),
+      icon:
+          const Icon(Icons.close_outlined, size: 20, color: textColorSecondary),
       label: const Text(
         'Batal',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        style: TextStyle(
+            fontSize: 16, fontWeight: FontWeight.w600, color: textColorSecondary),
       ),
       style: OutlinedButton.styleFrom(
+        foregroundColor: textColorSecondary,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: BorderSide(color: Colors.grey[400]!, width: 1.5),
@@ -463,7 +719,7 @@ class _EditTaskViewState extends State<EditTaskView> {
     );
   }
 
-  /// Handle pemilihan deadline dengan DatePicker
+  /// Handle pemilihan deadline dengan DatePicker bertema
   Future<void> _selectDeadline() async {
     final now = DateTime.now();
     final initialDate = _selectedDeadline ?? now.add(const Duration(days: 1));
@@ -476,12 +732,28 @@ class _EditTaskViewState extends State<EditTaskView> {
       helpText: 'Pilih Deadline',
       cancelText: 'Batal',
       confirmText: 'Pilih',
+      // Theming picker
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: primaryColor,
+                  onPrimary: Colors.white,
+                  onSurface: textColorPrimary,
+                ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: primaryColor, // Tombol "Pilih" dan "Batal"
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (selectedDate != null) {
-      // Pilih waktu juga
       if (!mounted) return;
-
       final selectedTime = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.fromDateTime(
@@ -490,6 +762,24 @@ class _EditTaskViewState extends State<EditTaskView> {
         helpText: 'Pilih Waktu Deadline',
         cancelText: 'Batal',
         confirmText: 'Pilih',
+        // Theming picker
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: Theme.of(context).colorScheme.copyWith(
+                    primary: primaryColor,
+                    onPrimary: Colors.white,
+                    onSurface: textColorPrimary,
+                  ),
+              textButtonTheme: TextButtonThemeData(
+                style: TextButton.styleFrom(
+                  foregroundColor: primaryColor,
+                ),
+              ),
+            ),
+            child: child!,
+          );
+        },
       );
 
       if (selectedTime != null) {
@@ -514,7 +804,7 @@ class _EditTaskViewState extends State<EditTaskView> {
       final timeFormat = DateFormat('HH:mm', 'id_ID');
       return '${dateFormat.format(deadline)} pukul ${timeFormat.format(deadline)}';
     } catch (e) {
-      // Fallback to default locale if Indonesian locale is not available
+      // Fallback
       final dateFormat = DateFormat('EEEE, dd MMMM yyyy');
       final timeFormat = DateFormat('HH:mm');
       return '${dateFormat.format(deadline)} at ${timeFormat.format(deadline)}';
@@ -524,14 +814,12 @@ class _EditTaskViewState extends State<EditTaskView> {
   /// Get error message untuk deadline
   String? _getDeadlineError() {
     if (_selectedDeadline == null) {
-      return null; // Error akan ditampilkan saat validasi form
+      return null;
     }
-
     final now = DateTime.now();
     if (_selectedDeadline!.isBefore(now)) {
       return 'Deadline tidak boleh di masa lalu';
     }
-
     return null;
   }
 
@@ -539,17 +827,15 @@ class _EditTaskViewState extends State<EditTaskView> {
   bool _validateForm() {
     bool isValid = true;
 
-    // Validasi form fields
     if (!_formKey.currentState!.validate()) {
       isValid = false;
     }
 
-    // Validasi deadline
     if (_selectedDeadline == null) {
       _showErrorSnackbar('Deadline harus dipilih');
       isValid = false;
-    } else if (_selectedDeadline!.isBefore(DateTime.now())) {
-      _showErrorSnackbar('Deadline tidak boleh di masa lalu');
+    } else if (_getDeadlineError() != null) {
+      _showErrorSnackbar(_getDeadlineError()!);
       isValid = false;
     }
 
@@ -558,7 +844,10 @@ class _EditTaskViewState extends State<EditTaskView> {
 
   /// Handle save perubahan tugas
   Future<void> _handleSave() async {
-    if (!_validateForm()) {
+    if (!_hasChanges || !_validateForm()) {
+      if (!_hasChanges) {
+        _showErrorSnackbar('Tidak ada perubahan untuk disimpan.');
+      }
       return;
     }
 
@@ -580,7 +869,7 @@ class _EditTaskViewState extends State<EditTaskView> {
 
       if (success) {
         _showSuccessSnackbar('Tugas berhasil diperbarui');
-        // Kembali ke home dan refresh data
+        // Hapus parameter 'transition'
         Get.offAllNamed(AppRoutes.home);
       } else {
         _showErrorSnackbar(
@@ -615,7 +904,7 @@ class _EditTaskViewState extends State<EditTaskView> {
 
       if (success) {
         _showSuccessSnackbar('Tugas berhasil dihapus');
-        // Kembali ke home dan refresh data
+        // Hapus parameter 'transition'
         Get.offAllNamed(AppRoutes.home);
       } else {
         _showErrorSnackbar(
@@ -640,6 +929,7 @@ class _EditTaskViewState extends State<EditTaskView> {
     if (_hasChanges) {
       _showCancelConfirmation();
     } else {
+      // Hapus parameter 'transition'
       Get.offAllNamed(AppRoutes.home);
     }
   }
@@ -648,6 +938,7 @@ class _EditTaskViewState extends State<EditTaskView> {
   Future<bool> _showDeleteConfirmation() async {
     final result = await Get.dialog<bool>(
       AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Hapus Tugas?'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -665,22 +956,25 @@ class _EditTaskViewState extends State<EditTaskView> {
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Tindakan ini tidak dapat dibatalkan.',
-              style: TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(
+                  color: accentColorRed.withOpacity(0.9), fontSize: 12),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Batal'),
+            child:
+                const Text('Batal', style: TextStyle(color: textColorSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Get.back(result: true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: accentColorRed,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Hapus'),
           ),
@@ -695,19 +989,25 @@ class _EditTaskViewState extends State<EditTaskView> {
   void _showCancelConfirmation() {
     Get.dialog(
       AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Batalkan Perubahan?'),
         content: const Text(
           'Anda memiliki perubahan yang belum disimpan. '
           'Apakah Anda yakin ingin membatalkan?',
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Tidak')),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Tidak', style: TextStyle(color: Colors.white)),
+          ),
           TextButton(
             onPressed: () {
               Get.back(); // Close dialog
+              // Hapus parameter 'transition'
               Get.offAllNamed(AppRoutes.home); // Kembali ke home
             },
-            child: const Text('Ya, Batalkan'),
+            child:
+                const Text('Ya, Batalkan', style: TextStyle(color: primaryColor)),
           ),
         ],
       ),
@@ -720,7 +1020,7 @@ class _EditTaskViewState extends State<EditTaskView> {
       'Berhasil',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green,
+      backgroundColor: completedColor,
       colorText: Colors.white,
       icon: const Icon(Icons.check_circle, color: Colors.white),
       duration: const Duration(seconds: 3),
@@ -733,7 +1033,7 @@ class _EditTaskViewState extends State<EditTaskView> {
       'Error',
       message,
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.red,
+      backgroundColor: accentColorRed,
       colorText: Colors.white,
       icon: const Icon(Icons.error, color: Colors.white),
       duration: const Duration(seconds: 4),
