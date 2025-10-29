@@ -9,18 +9,9 @@ import '../utils/accessibility_utils.dart';
 import '../utils/performance_utils.dart';
 import '../widgets/filter_chips.dart';
 import '../widgets/task_card.dart';
-// Pastikan Task di-impor
+import '../utils/colors.dart'; // Import color constants
 
-// --- Palet Warna Modern ---
-const Color primaryColor = Color(0xFF0A57E7); // Biru Kuat
-const Color primaryColorLight = Color(0xFF4285F4); // Biru Lebih Terang
-const Color accentColorRed = Color(0xFFD32F2F); // Merah Kuat
-const Color completedColor = Color(0xFF388E3C); // Hijau
-const Color pendingColor = Color(0xFFF57C00); // Oranye
-const Color backgroundColor = Color(0xFFF4F6F8); // Latar Belakang Abu-abu Muda
-const Color textColorPrimary = Color(0xFF212121); // Hitam Pekat
-const Color textColorSecondary = Color(0xFF757575); // Abu-abu
-// ---
+// Konstanta warna dihapus dari sini karena sudah diimpor dari utils/colors.dart
 
 /// HomeView sebagai main screen aplikasi Student Task Tracker
 /// Menampilkan daftar tugas dengan filter, search, dan navigasi ke form tugas

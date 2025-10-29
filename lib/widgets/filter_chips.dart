@@ -4,6 +4,10 @@ import 'package:get/get.dart';
 import '../controllers/task_controller.dart';
 import '../model/task.dart';
 import '../utils/accessibility_utils.dart';
+import '../utils/colors.dart'; // Import file colors.dart
+
+// Palet warna sekarang diimpor dari utils/colors.dart
+
 
 /// Widget untuk menampilkan filter chips untuk memfilter tugas
 /// Menyediakan filter berdasarkan status (All, Pending, Completed, Overdue)
@@ -25,13 +29,12 @@ class FilterChips extends StatelessWidget {
 
       return Container(
         padding:
-            padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12), // Adjusted padding
         child: Semantics(
           label: 'Filter tugas',
           hint: 'Pilih filter untuk menampilkan tugas berdasarkan status',
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            // Performance optimization: Add physics for better scrolling
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: TaskFilter.values.asMap().entries.map((entry) {
@@ -47,12 +50,12 @@ class FilterChips extends StatelessWidget {
 
                 return AnimationConfiguration.staggeredList(
                   position: index,
-                  duration: const Duration(milliseconds: 375),
+                  duration: const Duration(milliseconds: 300), // Slightly faster animation
                   child: SlideAnimation(
-                    horizontalOffset: 50.0,
+                    horizontalOffset: 30.0, // Reduced slide offset
                     child: FadeInAnimation(
                       child: Padding(
-                        padding: EdgeInsets.only(right: spacing ?? 8),
+                        padding: EdgeInsets.only(right: spacing ?? 10), // Increased spacing
                         child: AccessibilityUtils.ensureMinTouchTarget(
                           child: Semantics(
                             button: true,
@@ -64,88 +67,36 @@ class FilterChips extends StatelessWidget {
                                 'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
                               );
                             },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeInOut,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: isSelected
-                                      ? LinearGradient(
-                                          colors: [
-                                            _getFilterBaseColor(
-                                              filter,
-                                            ).withValues(alpha: 0.2),
-                                            _getFilterBaseColor(
-                                              filter,
-                                            ).withValues(alpha: 0.1),
-                                          ],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        )
-                                      : LinearGradient(
-                                          colors: [
-                                            Colors.grey[50]!,
-                                            Colors.grey[100]!,
-                                          ],
-                                        ),
-                                  borderRadius: BorderRadius.circular(24),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? _getFilterBaseColor(filter)
-                                        : Colors.grey[300]!,
-                                    width: isSelected ? 2.5 : 1.5,
-                                  ),
-                                  boxShadow: isSelected
-                                      ? [
-                                          BoxShadow(
-                                            color: _getFilterBaseColor(
-                                              filter,
-                                            ).withValues(alpha: 0.3),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ]
-                                      : [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.05,
-                                            ),
-                                            blurRadius: 4,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(24),
-                                  child: InkWell(
-                                    onTap: () {
-                                      taskController.setFilter(filter);
-                                      AccessibilityUtils.announceMessage(
-                                        'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
-                                      );
-                                    },
-                                    borderRadius: BorderRadius.circular(24),
-                                    splashColor: _getFilterBaseColor(
-                                      filter,
-                                    ).withValues(alpha: 0.1),
-                                    highlightColor: _getFilterBaseColor(
-                                      filter,
-                                    ).withValues(alpha: 0.05),
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 12,
-                                      ),
-                                      child: _buildModernChipLabel(
-                                        filter,
-                                        count,
-                                        isSelected,
-                                      ),
-                                    ),
-                                  ),
+                            // Use ChoiceChip for better semantics and default styling
+                            child: ChoiceChip(
+                              label: _buildChipLabelContent(filter, count, isSelected),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  taskController.setFilter(filter);
+                                  AccessibilityUtils.announceMessage(
+                                    'Filter ${_getFilterName(filter)} dipilih, menampilkan $count tugas',
+                                  );
+                                }
+                              },
+                              backgroundColor: Colors.white, // Background putih
+                              selectedColor: _getFilterBaseColor(filter).withOpacity(0.15), // Warna terpilih lebih halus
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20), // Rounded corners
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? _getFilterBaseColor(filter)
+                                      : Colors.grey.shade300, // Border abu-abu halus
+                                  width: isSelected ? 1.5 : 1.0, // Border lebih halus
                                 ),
                               ),
+                              labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Adjusted padding
+                              // Visual Density can make chips more compact
+                              visualDensity: VisualDensity.compact,
+                              // Ensure sufficient tap target size internally
+                               materialTapTargetSize: MaterialTapTargetSize.padded,
+                               elevation: isSelected ? 2 : 0, // Subtle elevation when selected
+                               shadowColor: isSelected ? _getFilterBaseColor(filter).withOpacity(0.2) : null,
                             ),
                           ),
                         ),
@@ -161,73 +112,44 @@ class FilterChips extends StatelessWidget {
     });
   }
 
-  /// Build modern label untuk chip dengan nama filter dan count
-  Widget _buildModernChipLabel(TaskFilter filter, int count, bool isSelected) {
+  /// Build content label untuk chip dengan icon, nama filter, dan count
+  Widget _buildChipLabelContent(TaskFilter filter, int count, bool isSelected) {
+      final color = isSelected ? _getFilterBaseColor(filter) : textColorSecondary; // Use palette color
     return AccessibilityUtils.excludeSemantics(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? _getFilterBaseColor(filter).withValues(alpha: 0.2)
-                  : Colors.grey.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              _getFilterIcon(filter),
-              size: 16,
-              color: isSelected
-                  ? _getFilterBaseColor(filter)
-                  : Colors.grey[600],
-              semanticLabel: _getFilterName(filter),
-            ),
+          Icon(
+            _getFilterIcon(filter),
+            size: 18, // Slightly larger icon
+            color: color,
+            semanticLabel: _getFilterName(filter), // Add semantic label to icon
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6), // Adjusted spacing
           Text(
             _getFilterName(filter),
             style: TextStyle(
               fontSize: 14,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected
-                  ? _getFilterBaseColor(filter)
-                  : Colors.grey[700],
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, // Adjusted weight
+              color: color,
               height: 1.2,
             ),
           ),
+          // Optionally show count only if > 0
           if (count > 0) ...[
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // Smaller padding
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isSelected
-                      ? [
-                          _getFilterBaseColor(filter),
-                          _getFilterBaseColor(filter).withValues(alpha: 0.8),
-                        ]
-                      : [Colors.grey[400]!, Colors.grey[500]!],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        (isSelected
-                                ? _getFilterBaseColor(filter)
-                                : Colors.grey[400]!)
-                            .withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                color: isSelected ? _getFilterBaseColor(filter) : Colors.grey.shade400, // Grey background when not selected
+                borderRadius: BorderRadius.circular(10), // More rounded count bubble
               ),
               child: Text(
                 count.toString(),
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 11, // Smaller count text
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Colors.white, // White text always
                   height: 1.0,
                 ),
               ),
@@ -238,37 +160,15 @@ class FilterChips extends StatelessWidget {
     );
   }
 
-  /// Build label untuk chip dengan nama filter dan count (fallback)
-  Widget _buildChipLabel(TaskFilter filter, int count) {
-    return _buildModernChipLabel(filter, count, false);
-  }
 
   /// Get nama filter dalam bahasa Indonesia
   String _getFilterName(TaskFilter filter) {
-    switch (filter) {
-      case TaskFilter.all:
-        return 'Semua';
-      case TaskFilter.pending:
-        return 'Belum Selesai';
-      case TaskFilter.completed:
-        return 'Selesai';
-      case TaskFilter.overdue:
-        return 'Terlambat';
-    }
+    return filter.displayName; // Use extension method
   }
 
   /// Get icon untuk setiap filter
   IconData _getFilterIcon(TaskFilter filter) {
-    switch (filter) {
-      case TaskFilter.all:
-        return Icons.list;
-      case TaskFilter.pending:
-        return Icons.pending_actions;
-      case TaskFilter.completed:
-        return Icons.check_circle;
-      case TaskFilter.overdue:
-        return Icons.warning;
-    }
+     return filter.icon; // Use extension method
   }
 
   /// Get jumlah tugas untuk setiap filter
@@ -285,56 +185,18 @@ class FilterChips extends StatelessWidget {
     }
   }
 
-  /// Get background color berdasarkan filter dan state
-  Color _getBackgroundColor(TaskFilter filter, bool isSelected) {
-    final baseColor = _getFilterBaseColor(filter);
 
-    if (isSelected) {
-      return baseColor.withValues(
-        alpha: 0.25,
-      ); // Slightly more opaque for better contrast
-    } else {
-      return Colors.grey[100]!;
-    }
-  }
-
-  /// Get border color berdasarkan filter dan state
-  Color _getBorderColor(TaskFilter filter, bool isSelected) {
-    final baseColor = _getFilterBaseColor(filter);
-
-    if (isSelected) {
-      return baseColor;
-    } else {
-      return Colors.grey[300]!;
-    }
-  }
-
-  /// Get text color untuk selected state
-  Color _getSelectedTextColor(TaskFilter filter) {
-    return _getFilterBaseColor(filter);
-  }
-
-  /// Get text color untuk unselected state
-  Color _getUnselectedTextColor(TaskFilter filter) {
-    return Colors.grey[700]!;
-  }
-
-  /// Get checkmark color
-  Color _getCheckmarkColor(TaskFilter filter) {
-    return _getFilterBaseColor(filter);
-  }
-
-  /// Get base color untuk setiap filter
+  /// Get base color untuk setiap filter (menggunakan palet warna)
   Color _getFilterBaseColor(TaskFilter filter) {
-    switch (filter) {
+     switch (filter) {
       case TaskFilter.all:
-        return Colors.blue;
+        return primaryColor; // Biru
       case TaskFilter.pending:
-        return Colors.orange;
+        return pendingColor; // Oranye
       case TaskFilter.completed:
-        return Colors.green;
+        return completedColor; // Hijau
       case TaskFilter.overdue:
-        return Colors.red;
+        return accentColorRed; // Merah
     }
   }
 }
@@ -359,27 +221,27 @@ extension TaskFilterExtension on TaskFilter {
   IconData get icon {
     switch (this) {
       case TaskFilter.all:
-        return Icons.list;
+        return Icons.list_alt_rounded; // Changed icon
       case TaskFilter.pending:
-        return Icons.pending_actions;
+        return Icons.pending_actions_rounded; // Changed icon
       case TaskFilter.completed:
-        return Icons.check_circle;
+        return Icons.check_circle_outline_rounded; // Changed icon
       case TaskFilter.overdue:
-        return Icons.warning;
+        return Icons.warning_amber_rounded; // Changed icon
     }
   }
 
-  /// Get color untuk filter
+  /// Get color untuk filter (menggunakan palet warna)
   Color get color {
-    switch (this) {
+     switch (this) {
       case TaskFilter.all:
-        return Colors.blue;
+        return primaryColor;
       case TaskFilter.pending:
-        return Colors.orange;
+        return pendingColor;
       case TaskFilter.completed:
-        return Colors.green;
+        return completedColor;
       case TaskFilter.overdue:
-        return Colors.red;
+        return accentColorRed;
     }
   }
 
@@ -389,131 +251,136 @@ extension TaskFilterExtension on TaskFilter {
       case TaskFilter.all:
         return true;
       case TaskFilter.pending:
+        // Include overdue in pending as well, if needed? Or keep separate?
+        // Assuming pending means not completed AND not overdue yet.
+        // return !task.isCompleted && !task.isOverdue;
+        // Or simply not completed:
         return !task.isCompleted;
       case TaskFilter.completed:
         return task.isCompleted;
       case TaskFilter.overdue:
-        return task.isOverdue;
+        return task.isOverdue && !task.isCompleted; // Overdue tasks must not be completed
     }
   }
 }
 
 /// Widget alternatif untuk filter chips dengan layout vertikal
-/// Berguna untuk sidebar atau drawer
-class VerticalFilterChips extends StatelessWidget {
-  final EdgeInsetsGeometry? padding;
-  final double? spacing;
+/// Berguna untuk sidebar atau drawer (belum diperbarui dengan gaya baru)
+// class VerticalFilterChips extends StatelessWidget {
+//   final EdgeInsetsGeometry? padding;
+//   final double? spacing;
 
-  const VerticalFilterChips({super.key, this.padding, this.spacing});
+//   const VerticalFilterChips({super.key, this.padding, this.spacing});
 
-  @override
-  Widget build(BuildContext context) {
-    final taskController = Get.find<TaskController>();
+//   @override
+//   Widget build(BuildContext context) {
+//     final taskController = Get.find<TaskController>();
 
-    return Obx(() {
-      return Container(
-        padding: padding ?? const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: TaskFilter.values.map((filter) {
-            final isSelected = taskController.currentFilter == filter;
-            final count = _getFilterCount(taskController, filter);
+//     return Obx(() {
+//       return Container(
+//         padding: padding ?? const EdgeInsets.all(16),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.stretch,
+//           children: TaskFilter.values.map((filter) {
+//             final isSelected = taskController.currentFilter == filter;
+//             final count = _getFilterCount(taskController, filter);
 
-            return Padding(
-              padding: EdgeInsets.only(bottom: spacing ?? 8),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => taskController.setFilter(filter),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? filter.color.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected ? filter.color : Colors.grey[300]!,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            filter.icon,
-                            color: isSelected ? filter.color : Colors.grey[600],
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              filter.displayName,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? filter.color
-                                    : Colors.grey[700],
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          if (count > 0) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? filter.color
-                                    : Colors.grey[400],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                count.toString(),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      );
-    });
-  }
+//             return Padding(
+//               padding: EdgeInsets.only(bottom: spacing ?? 8),
+//               child: AnimatedContainer(
+//                 duration: const Duration(milliseconds: 200),
+//                 curve: Curves.easeInOut,
+//                 child: Material(
+//                   color: Colors.transparent,
+//                   child: InkWell(
+//                     onTap: () => taskController.setFilter(filter),
+//                     borderRadius: BorderRadius.circular(12),
+//                     child: Container(
+//                       padding: const EdgeInsets.symmetric(
+//                         horizontal: 16,
+//                         vertical: 12,
+//                       ),
+//                       decoration: BoxDecoration(
+//                         color: isSelected
+//                             ? filter.color.withOpacity(0.1)
+//                             : Colors.transparent,
+//                         borderRadius: BorderRadius.circular(12),
+//                         border: Border.all(
+//                           color: isSelected ? filter.color : Colors.grey[300]!,
+//                           width: isSelected ? 2 : 1,
+//                         ),
+//                       ),
+//                       child: Row(
+//                         children: [
+//                           Icon(
+//                             filter.icon,
+//                             color: isSelected ? filter.color : Colors.grey[600],
+//                             size: 20,
+//                           ),
+//                           const SizedBox(width: 12),
+//                           Expanded(
+//                             child: Text(
+//                               filter.displayName,
+//                               style: TextStyle(
+//                                 color: isSelected
+//                                     ? filter.color
+//                                     : Colors.grey[700],
+//                                 fontWeight: isSelected
+//                                     ? FontWeight.w600
+//                                     : FontWeight.w500,
+//                                 fontSize: 14,
+//                               ),
+//                             ),
+//                           ),
+//                           if (count > 0) ...[
+//                             Container(
+//                               padding: const EdgeInsets.symmetric(
+//                                 horizontal: 8,
+//                                 vertical: 4,
+//                               ),
+//                               decoration: BoxDecoration(
+//                                 color: isSelected
+//                                     ? filter.color
+//                                     : Colors.grey[400],
+//                                 borderRadius: BorderRadius.circular(12),
+//                               ),
+//                               child: Text(
+//                                 count.toString(),
+//                                 style: TextStyle(
+//                                   fontSize: 12,
+//                                   fontWeight: FontWeight.bold,
+//                                   color: isSelected
+//                                       ? Colors.white
+//                                       : Colors.white,
+//                                 ),
+//                               ),
+//                             ),
+//                           ],
+//                         ],
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ),
+//             );
+//           }).toList(),
+//         ),
+//       );
+//     });
+//   }
 
-  /// Get jumlah tugas untuk setiap filter
-  int _getFilterCount(TaskController controller, TaskFilter filter) {
-    switch (filter) {
-      case TaskFilter.all:
-        return controller.totalTasks;
-      case TaskFilter.pending:
-        return controller.pendingTasks;
-      case TaskFilter.completed:
-        return controller.completedTasks;
-      case TaskFilter.overdue:
-        return controller.overdueTasks;
-    }
-  }
-}
+//   /// Get jumlah tugas untuk setiap filter
+//   int _getFilterCount(TaskController controller, TaskFilter filter) {
+//     switch (filter) {
+//       case TaskFilter.all:
+//         return controller.totalTasks;
+//       case TaskFilter.pending:
+//         return controller.pendingTasks;
+//       case TaskFilter.completed:
+//         return controller.completedTasks;
+//       case TaskFilter.overdue:
+//         return controller.overdueTasks;
+//     }
+//   }
+// }
+
