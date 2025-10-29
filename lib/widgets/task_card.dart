@@ -11,11 +11,7 @@ import '../utils/colors.dart'; // Import file colors.dart
 /// Widget kartu untuk menampilkan informasi tugas
 /// Menyediakan checkbox untuk toggle status, visual indicators,
 /// dan swipe actions untuk edit/delete
-///
-/// **Desain Baru (Fresh Look):**
-/// - Layout disederhanakan: Judul dan Prioritas di atas.
-/// - Footer bersih: Info Mata Pelajaran dan Deadline disatukan di bawah.
-/// - Mengurangi "chip" yang berlebihan untuk tampilan yang lebih minimalis.
+/// Performance optimized with const constructors and efficient rebuilds
 class TaskCard extends StatelessWidget {
   final Task task;
   final VoidCallback? onTap;
@@ -35,8 +31,7 @@ class TaskCard extends StatelessWidget {
     final taskController = Get.find<TaskController>();
 
     // Performance optimization: Create DateFormat once and reuse
-    // Format yang lebih pendek untuk footer
-    final dateFormat = DateFormat('dd MMM, HH:mm', 'id_ID');
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
 
     // Create comprehensive semantic label for the task card
     final semanticLabel = AccessibilityUtils.getTaskCardSemantics(
@@ -139,13 +134,14 @@ class TaskCard extends StatelessWidget {
                               _buildModernCheckbox(taskController),
                               const SizedBox(width: 12), // Adjusted spacing
                               Expanded(
-                                child:
-                                    // --- PERUBAHAN DESAIN ---
-                                    // Column di sini dihapus agar Judul
-                                    // bisa mengisi ruang vertikal
-                                    // dan Subject dipindah ke footer.
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     _buildTitle(),
-                                // --- AKHIR PERUBAHAN ---
+                                    const SizedBox(height: 4),
+                                    _buildSubject(),
+                                  ],
+                                ),
                               ),
                               const SizedBox(width: 8), // Spacing before indicator
                               _buildPriorityIndicator(),
@@ -160,34 +156,15 @@ class TaskCard extends StatelessWidget {
 
                           const SizedBox(height: 12), // Adjusted spacing
 
-                          // --- PERUBAHAN DESAIN ---
-                          // Footer baru yang menyatukan Subject dan Deadline
-                          // untuk tampilan yang lebih bersih.
+                          // Footer dengan deadline dan actions
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Widget info Mata Pelajaran baru
-                              _buildFooterInfo(
-                                icon: Icons.school_outlined,
-                                text: task.subject,
-                                color: _getSubjectColor(),
-                                semanticLabel: 'Mata pelajaran',
-                              ),
-                              
+                              Expanded(child: _buildModernDeadlineRow()),
                               const SizedBox(width: 12),
-
-                              // Widget info Deadline baru
-                              Flexible(
-                                child: _buildFooterInfo(
-                                  icon: Icons.access_time_rounded,
-                                  text: dateFormat.format(task.deadline),
-                                  color: _getDeadlineColor(),
-                                  semanticLabel: 'Deadline',
-                                ),
-                              ),
+                              // Optionally hide buttons until long press or hover?
+                              // _buildActionButtons(),
                             ],
                           ),
-                          // --- AKHIR PERUBAHAN ---
                         ],
                       ),
                     ),
@@ -232,8 +209,7 @@ class TaskCard extends StatelessWidget {
             border: Border.all(
                 color: task.isCompleted
                     ? _getStatusColor()
-                    : textColorSecondary
-                        .withOpacity(0.5), // Softer border when unchecked
+                    : textColorSecondary.withOpacity(0.5), // Softer border when unchecked
                 width: 2.0), // Slightly thinner border
             boxShadow: task.isCompleted
                 ? [
@@ -280,6 +256,7 @@ class TaskCard extends StatelessWidget {
     );
   }
 
+
   /// Build judul tugas dengan styling berdasarkan status
   Widget _buildTitle() {
     return AccessibilityUtils.excludeSemantics(
@@ -288,9 +265,7 @@ class TaskCard extends StatelessWidget {
         style: TextStyle(
           fontSize: 17, // Slightly adjusted size
           fontWeight: FontWeight.w600,
-          color: task.isCompleted
-              ? textColorSecondary
-              : textColorPrimary, // Use palette colors
+          color: task.isCompleted ? textColorSecondary : textColorPrimary, // Use palette colors
           decoration: task.isCompleted ? TextDecoration.lineThrough : null,
           decorationColor: textColorSecondary,
           height: 1.3,
@@ -301,9 +276,38 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  // --- DIHAPUS ---
-  // Widget _buildSubject() { ... }
-  // Fungsi ini tidak diperlukan lagi karena digantikan oleh _buildFooterInfo
+  /// Build mata pelajaran dengan chip styling modern
+  Widget _buildSubject() {
+    return AccessibilityUtils.excludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), // Adjusted padding
+        decoration: BoxDecoration(
+          color: _getSubjectColor().withOpacity(0.1), // Solid lighter color
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _getSubjectColor().withOpacity(0.3), // Slightly stronger border
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school_outlined, size: 14, color: _getSubjectColor()),
+            const SizedBox(width: 4),
+            Text(
+              task.subject,
+              style: TextStyle(
+                fontSize: 12, // Slightly smaller
+                fontWeight: FontWeight.w600,
+                color: _getSubjectColor(),
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   /// Build deskripsi tugas
   Widget _buildDescription() {
@@ -312,9 +316,7 @@ class TaskCard extends StatelessWidget {
         task.description,
         style: TextStyle(
           fontSize: 14, // Adjusted size
-          color: task.isCompleted
-              ? textColorSecondary.withOpacity(0.7)
-              : textColorSecondary,
+          color: task.isCompleted ? textColorSecondary.withOpacity(0.7) : textColorSecondary,
           decoration: task.isCompleted ? TextDecoration.lineThrough : null,
           decorationColor: textColorSecondary.withOpacity(0.7),
           height: 1.4, // Better line height
@@ -325,43 +327,42 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  // --- DIHAPUS ---
-  // Widget _buildModernDeadlineRow() { ... }
-  // Fungsi ini tidak diperlukan lagi karena digantikan oleh _buildFooterInfo
+  /// Build modern deadline row dengan styling yang lebih menarik
+  Widget _buildModernDeadlineRow() {
+    final dateFormat = DateFormat('dd MMM, HH:mm', 'id_ID'); // Shorter format
 
-  // --- WIDGET BARU ---
-  /// Helper widget untuk membangun item info di footer (Subject & Deadline)
-  /// Ini menggantikan _buildSubject dan _buildModernDeadlineRow
-  Widget _buildFooterInfo({
-    required IconData icon,
-    required String text,
-    required Color color,
-    required String semanticLabel,
-  }) {
-    // Gunakan Semantics untuk memberi label pada grup ikon + teks
-    return Semantics(
-      label: '$semanticLabel: $text',
-      child: AccessibilityUtils.excludeSemantics( // Ekskludekan turunan
+    return AccessibilityUtils.excludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Adjusted padding
+        decoration: BoxDecoration(
+          color: _getDeadlineColor().withOpacity(0.1), // More subtle background
+          borderRadius: BorderRadius.circular(12),
+          // Removed border for a cleaner look
+          // border: Border.all(
+          //   color: _getDeadlineColor().withOpacity(0.2),
+          //   width: 1,
+          // ),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              icon,
-              size: 14,
-              color: color.withOpacity(0.8), // Ikon sedikit lebih transparan
+              Icons.access_time_rounded,
+              size: 14, // Slightly smaller icon
+              color: _getDeadlineColor(),
+              semanticLabel: 'Deadline',
             ),
-            const SizedBox(width: 5), // Spasi yang pas
-            Flexible( // Agar teks bisa wrap jika terlalu panjang
+            const SizedBox(width: 4), // Reduced spacing
+            Flexible(
               child: Text(
-                text,
+                dateFormat.format(task.deadline),
                 style: TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w500, // Sedikit lebih ringan dari bold
-                  color: color,
+                  color: _getDeadlineColor(),
+                  fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
-                overflow: TextOverflow.ellipsis, // Cegah overflow
-                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -369,7 +370,7 @@ class TaskCard extends StatelessWidget {
       ),
     );
   }
-  // --- AKHIR WIDGET BARU ---
+
 
   /// Build priority indicator modern
   Widget _buildPriorityIndicator() {
@@ -381,48 +382,43 @@ class TaskCard extends StatelessWidget {
     String text;
     Color bgColor;
     IconData iconData;
-    String semanticLabel;
 
     if (task.isOverdue) {
       text = 'LATE';
       bgColor = accentColorRed;
       iconData = Icons.warning_amber_rounded;
-      semanticLabel = 'Tugas terlambat';
     } else { // isDueSoon
       text = 'SOON';
       bgColor = pendingColor; // Use Oranye from palette
       iconData = Icons.schedule_rounded;
-      semanticLabel = 'Tugas akan segera berakhir';
     }
 
-    return Semantics(
-      label: semanticLabel,
-      child: AccessibilityUtils.excludeSemantics(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(
-            color: bgColor.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(iconData, size: 12, color: bgColor),
-              const SizedBox(width: 4),
-              Text(
-                text,
-                style: TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  color: bgColor,
-                ),
+    return AccessibilityUtils.excludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        decoration: BoxDecoration(
+          color: bgColor.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(iconData, size: 12, color: bgColor),
+            const SizedBox(width: 4),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: bgColor,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
 
   /// Build background untuk swipe actions
   Widget _buildSwipeBackground({
@@ -432,12 +428,10 @@ class TaskCard extends StatelessWidget {
     required String label,
   }) {
     return Container(
-      margin:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 6), // Match card margin
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), // Match card margin
       decoration: BoxDecoration(
         color: color.withOpacity(0.9), // Slightly transparent
-        borderRadius:
-            BorderRadius.circular(16), // Match card border radius
+        borderRadius: BorderRadius.circular(16), // Match card border radius
       ),
       child: Align(
         alignment: alignment,
@@ -470,13 +464,11 @@ class TaskCard extends StatelessWidget {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Rounded corners
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // Rounded corners
             title: AccessibilityUtils.createSemanticWidget(
               header: true,
               label: 'Konfirmasi Hapus Tugas',
-              child: const Row(
-                // Add icon to title
+              child: const Row( // Add icon to title
                 children: [
                   Icon(Icons.delete_forever_outlined, color: accentColorRed),
                   SizedBox(width: 8),
@@ -488,8 +480,7 @@ class TaskCard extends StatelessWidget {
               'Apakah Anda yakin ingin menghapus tugas "${task.title}"?\nTindakan ini tidak dapat dibatalkan.',
               style: const TextStyle(fontSize: 16, height: 1.4),
             ),
-            actionsPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             actions: [
               TextButton(
                 onPressed: () {
@@ -497,8 +488,7 @@ class TaskCard extends StatelessWidget {
                   Navigator.of(context).pop(false);
                 },
                 style: TextButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
                 child: const Text(
                   'Batal',
@@ -508,7 +498,7 @@ class TaskCard extends StatelessWidget {
                 label: 'Batal',
                 hint: 'Batalkan penghapusan tugas',
               ),
-GentleElevatedButton( // Use ElevatedButton for delete action
+              ElevatedButton( // Use ElevatedButton for delete action
                 onPressed: () {
                   AccessibilityUtils.announceMessage(
                     'Konfirmasi hapus tugas ${task.title}',
@@ -518,10 +508,8 @@ GentleElevatedButton( // Use ElevatedButton for delete action
                 style: ElevatedButton.styleFrom(
                   backgroundColor: accentColorRed,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text(
                   'Hapus',
@@ -570,10 +558,7 @@ GentleElevatedButton( // Use ElevatedButton for delete action
 
   /// Get warna untuk mata pelajaran berdasarkan hash
   Color _getSubjectColor() {
-    // --- PERUBAHAN ---
-    // Sedikit menggelapkan warna agar kontrasnya lebih baik
-    // untuk teks di footer, dan juga menyesuaikan opacity
-    // jika tugas sudah selesai.
+    // Generate warna berdasarkan hash dari nama mata pelajaran
     final hash = task.subject.hashCode;
     final colors = [
       Colors.blue.shade700,
@@ -585,13 +570,8 @@ GentleElevatedButton( // Use ElevatedButton for delete action
       Colors.pink.shade700,
       Colors.brown.shade700,
     ];
-    
-    Color baseColor = colors[hash.abs() % colors.length];
-    
-    if (task.isCompleted) {
-      return baseColor.withOpacity(0.6); // Buat pudar jika selesai
-    }
-    return baseColor;
-    // --- AKHIR PERUBAHAN ---
+    return colors[hash.abs() % colors.length];
   }
+
 }
+
