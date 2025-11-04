@@ -48,9 +48,26 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     horizontal: 12,
   );
 
+  // --- PERUBAHAN UNTUK PAGINASI ---
+  static const int _itemsPerPage = 3; // Menampilkan 3 kartu per halaman
+  late final PageController _pageController;
+  final RxInt _currentPageIndex = 0.obs; // Melacak halaman saat ini
+  // --- AKHIR PERUBAHAN ---
+
   @override
   void initState() {
     super.initState();
+
+    // --- PERUBAHAN UNTUK PAGINASI ---
+    // Pindahkan inisialisasi PageController ke atas
+    // untuk memastikan _pageController diinisialisasi sebelum
+    // listener lain atau method build dipanggil.
+    _pageController = PageController();
+    _pageController.addListener(() {
+      // Perbarui halaman saat ini ketika PageView di-scroll/swipe
+      _currentPageIndex.value = _pageController.page?.round() ?? 0;
+    });
+    // --- AKHIR PERUBAHAN ---
 
     _searchFocusNode = AccessibilityUtils.createFocusNode(
       debugLabel: 'Search Field',
@@ -99,6 +116,14 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     ).copyWith(left: 64);
     _searchBarWidthFraction = 0.75;
     _searchBarMargin = const EdgeInsets.symmetric(vertical: 8, horizontal: 12);
+
+    // --- PERUBAHAN UNTUK PAGINASI ---
+    // _pageController = PageController(); // <-- Sudah dipindahkan ke atas
+    // _pageController.addListener(() {
+    //   // Perbarui halaman saat ini ketika PageView di-scroll/swipe
+    //   _currentPageIndex.value = _pageController.page?.round() ?? 0;
+    // });
+    // --- AKHIR PERUBAHAN ---
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AccessibilityUtils.announceMessage('Halaman daftar tugas dimuat');
@@ -178,6 +203,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     _refreshButtonFocusNode.dispose();
     _fabFocusNode.dispose();
     _searchBarController.dispose();
+    _pageController.dispose(); // --- PERUBAHAN: Dispose PageController
     super.dispose();
   }
 
@@ -192,17 +218,21 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       body: Stack(
         children: [
           // Latar belakang gradien
-          Positioned.fill( // <-- PENTING: Membuat gradien mengisi seluruh Stack
+          Positioned.fill(
+            // <-- PENTING: Membuat gradien mengisi seluruh Stack
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
                     primaryColor, // Atas (Biru Tua)
-                    Colors.white // Bawah (Putih)
+                    Colors.white, // Bawah (Putih)
                   ],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.0, 0.9], // Atur gradasi agar putih mulai lebih cepat
+                  stops: const [
+                    0.0,
+                    0.9,
+                  ], // Atur gradasi agar putih mulai lebih cepat
                 ),
               ),
             ),
@@ -215,7 +245,8 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                 _buildModernHeader(taskController),
                 AccessibilityUtils.createSemanticWidget(
                   label: 'Filter tugas',
-                  hint: 'Pilih filter untuk menampilkan tugas berdasarkan status',
+                  hint:
+                      'Pilih filter untuk menampilkan tugas berdasarkan status',
                   child: const FilterChips(),
                 ),
                 Expanded(
@@ -370,8 +401,162 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     if (controller.filteredTasks.isEmpty) {
       return _buildEmptyState(controller);
     }
-    return _buildTaskListView(controller);
+
+    // --- PERUBAHAN UNTUK PAGINASI ---
+    final tasks = controller.filteredTasks;
+    final int pageCount = (tasks.length / _itemsPerPage).ceil();
+    final bool showNavigator = pageCount > 1;
+
+   // Di dalam _buildTaskList, ganti return statement menjadi:
+return Semantics(
+  key: const ValueKey('list'),
+  label: 'Daftar ${tasks.length} tugas, ditampilkan dalam $pageCount halaman',
+  hint: 'Geser ke bawah untuk muat ulang, geser ke kiri atau kanan untuk berpindah halaman',
+  child: Stack( // <-- GUNAKAN STACK
+    children: [
+      // Konten PageView
+      Expanded(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            AccessibilityUtils.announceMessage('Memuat ulang daftar tugas');
+            await controller.refresh();
+            AccessibilityUtils.announceMessage(
+              'Daftar tugas berhasil dimuat ulang',
+            );
+          },
+          color: primaryColor,
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: pageCount,
+            itemBuilder: (context, pageIndex) {
+              final int startIndex = pageIndex * _itemsPerPage;
+              final int endIndex = (startIndex + _itemsPerPage).clamp(
+                0,
+                tasks.length,
+              );
+              final List<dynamic> pageTasks = tasks.sublist(
+                startIndex,
+                endIndex,
+              );
+
+              return Container(
+                color: Colors.transparent,
+                child: AnimationLimiter(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(
+                      bottom: 8,
+                      top: 8,
+                    ),
+                    controller: _scrollController,
+                    itemCount: pageTasks.length,
+                    cacheExtent: PerformanceUtils.listCacheExtent,
+                    itemBuilder: (context, index) {
+                      final task = pageTasks[index];
+                      return AnimationConfiguration.staggeredList(
+                        position: index,
+                        duration: const Duration(milliseconds: 450),
+                        child: SlideAnimation(
+                          verticalOffset: 50.0,
+                          curve: Curves.easeOutExpo,
+                          child: FadeInAnimation(
+                            child: Semantics(
+                              sortKey: OrdinalSortKey(index.toDouble()),
+                              child: TaskCard(
+                                task: task,
+                                onTap: () => _navigateToEditTask(task.id),
+                                onEdit: () => _navigateToEditTask(task.id),
+                                onDelete: () =>
+                                    _handleDeleteTask(controller, task.id),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    semanticChildCount: pageTasks.length,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      
+      // Pagination di bagian bawah overlay
+      if (showNavigator) 
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: _buildPageNavigator(pageCount),
+        ),
+    ],
+  ),
+);
+    // --- AKHIR PERUBAHAN ---
   }
+
+Widget _buildPageNavigator(int pageCount) {
+  return Obx(() {
+    final bool canGoBack = _currentPageIndex.value > 0;
+    final bool canGoForward = _currentPageIndex.value < pageCount - 1;
+
+    return Container(
+      height: 50, // Fixed height
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios,
+              color: canGoBack ? primaryColor : Colors.grey[400],
+              size: 20,
+            ),
+            onPressed: canGoBack
+                ? () {
+                    _pageController.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                : null,
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Halaman ${_currentPageIndex.value + 1} dari $pageCount',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: textColorSecondary,
+            ),
+          ),
+          const SizedBox(width: 16),
+          IconButton(
+            icon: Icon(
+              Icons.arrow_forward_ios,
+              color: canGoForward ? primaryColor : Colors.grey[400],
+              size: 20,
+            ),
+            onPressed: canGoForward
+                ? () {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  }
+                : null,
+          ),
+        ],
+      ),
+    );
+  });
+}
+  // --- AKHIR WIDGET BARU ---
 
   Widget _buildLoadingState() {
     return Shimmer.fromColors(
@@ -379,7 +564,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
       child: ListView.builder(
-        itemCount: 5,
+        itemCount: 3, // Ubah ke 3 agar konsisten dengan _itemsPerPage
         itemBuilder: (context, index) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -590,59 +775,61 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildTaskListView(TaskController controller) {
-    return Semantics(
-      key: const ValueKey('list'),
-      label: 'Daftar ${controller.filteredTasks.length} tugas',
-      hint: 'Geser ke bawah untuk muat ulang, ketuk tugas untuk edit',
-      child: RefreshIndicator(
-        onRefresh: () async {
-          AccessibilityUtils.announceMessage('Memuat ulang daftar tugas');
-          await controller.refresh();
-          AccessibilityUtils.announceMessage(
-            'Daftar tugas berhasil dimuat ulang',
-          );
-        },
-        color: primaryColor,
-        child: AnimationLimiter(
-          child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 90, top: 8),
-            controller: _scrollController,
-            itemCount: controller.filteredTasks.length,
-            cacheExtent: PerformanceUtils.listCacheExtent,
-            itemBuilder: (context, index) {
-              final task = controller.filteredTasks[index];
-              return AnimationConfiguration.staggeredList(
-                position: index,
-                duration: const Duration(
-                  milliseconds: 450,
-                ),
-                child: SlideAnimation(
-                  verticalOffset: 50.0,
-                  curve: Curves.easeOutExpo,
-                  child: FadeInAnimation(
-                    child: Semantics(
-                      sortKey: OrdinalSortKey(index.toDouble()),
-                      child: TaskCard(
-                        task: task,
-                        onTap: () => _navigateToEditTask(task.id),
-                        onEdit: () => _navigateToEditTask(task.id),
-                        onDelete: () => _handleDeleteTask(controller, task.id),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-            semanticChildCount: controller.filteredTasks.length,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  // --- KODE LAMA _buildTaskListView ---
+  // Widget _buildTaskListView(TaskController controller) {
+  //   return Semantics(
+  //     key: const ValueKey('list'),
+  //     label: 'Daftar ${controller.filteredTasks.length} tugas',
+  //     hint: 'Geser ke bawah untuk muat ulang, ketuk tugas untuk edit',
+  //     child: RefreshIndicator(
+  //       onRefresh: () async {
+  //         AccessibilityUtils.announceMessage('Memuat ulang daftar tugas');
+  //         await controller.refresh();
+  //         AccessibilityUtils.announceMessage(
+  //           'Daftar tugas berhasil dimuat ulang',
+  //         );
+  //       },
+  //       color: primaryColor,
+  //       child: AnimationLimiter(
+  //         child: ListView.builder(
+  //           padding: const EdgeInsets.only(bottom: 90, top: 8),
+  //           controller: _scrollController,
+  //           itemCount: controller.filteredTasks.length,
+  //           cacheExtent: PerformanceUtils.listCacheExtent,
+  //           itemBuilder: (context, index) {
+  //             final task = controller.filteredTasks[index];
+  //             return AnimationConfiguration.staggeredList(
+  //               position: index,
+  //               duration: const Duration(
+  //                 milliseconds: 450,
+  //               ),
+  //               child: SlideAnimation(
+  //                 verticalOffset: 50.0,
+  //                 curve: Curves.easeOutExpo,
+  //                 child: FadeInAnimation(
+  //                   child: Semantics(
+  //                     sortKey: OrdinalSortKey(index.toDouble()),
+  //                     child: TaskCard(
+  //                       task: task,
+  //                       onTap: () => _navigateToEditTask(task.id),
+  //                       onEdit: () => _navigateToEditTask(task.id),
+  //                       onDelete: () => _handleDeleteTask(controller, task.id),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //             );
+  //           },
+  //           semanticChildCount: controller.filteredTasks.length,
+  //           physics: const BouncingScrollPhysics(
+  //             parent: AlwaysScrollableScrollPhysics(),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+  // --- AKHIR KODE LAMA ---
 
   Widget _buildModernHeader(TaskController controller) {
     // Bungkus dengan AnimatedBuilder untuk gradien bergerak
@@ -661,18 +848,19 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           //     primaryColorLight.withOpacity(0.1),
           //   ],
           // ),
-          
+
           // GANTI: Gunakan warna putih semi-transparan (efek "frosted glass")
           color: Colors.white.withOpacity(0.7), // 40% Putih Transparan
 
           borderRadius: BorderRadius.circular(20),
-          
+
           // HAPUS: Border biru
           // border: Border.all(color: primaryColor.withOpacity(0.2), width: 1.5),
-          
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1), // Tetap gunakan shadow hitam tipis
+              color: Colors.black.withOpacity(
+                0.1,
+              ), // Tetap gunakan shadow hitam tipis
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -988,6 +1176,3 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     }
   }
 }
-
-
-
