@@ -72,11 +72,11 @@ class StudentTaskTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       title: 'Student Task Tracker',
-      theme: _buildAppTheme(Brightness.light), // Pass brightness
-      darkTheme: _buildAppTheme(Brightness.dark), // Use the same builder
-      highContrastTheme: AccessibilityTheme.buildHighContrastLightTheme(), // Keep accessibility themes
+      theme: _buildAppTheme(Brightness.light), // Tema terang (light theme)
+      // darkTheme: _buildAppTheme(Brightness.dark), // Hapus atau abaikan darkTheme
+      highContrastTheme: AccessibilityTheme.buildHighContrastLightTheme(), 
       highContrastDarkTheme: AccessibilityTheme.buildHighContrastDarkTheme(),
-      themeMode: ThemeMode.system, // Respect system theme
+      themeMode: ThemeMode.light, // <-- PERUBAHAN DI SINI: Paksa selalu mode terang
       initialRoute: AppRoutes.home,
       getPages: AppPages.pages,
       home: initializationError != null
@@ -97,12 +97,12 @@ class StudentTaskTrackerApp extends StatelessWidget {
       // Accessibility-aware builder
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
-        final isDarkMode = mediaQuery.platformBrightness == Brightness.dark;
+        // Selalu gunakan tema terang, abaikan pengaturan sistem
         final accessibilityTheme =
             AccessibilityTheme.getAccessibilityAwareTheme(
               context: context,
               lightTheme: _buildAppTheme(Brightness.light),
-              darkTheme: _buildAppTheme(Brightness.dark),
+              darkTheme: _buildAppTheme(Brightness.light), // Paksa tema terang
             );
 
         return Theme(
@@ -458,7 +458,7 @@ class _AppInitializerState extends State<AppInitializer> {
       return 'Terjadi kesalahan saat memulai aplikasi. Silakan coba lagi.';
       // Optionally log the full error for debugging:
       // print("Initialization Error: $error");
-      // return 'Terjadi kesalahan: ${error.toString()}';
+      // return 'Terjadi: ${error.toString()}';
     }
   }
 
@@ -601,4 +601,3 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
 }
-

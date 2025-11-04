@@ -89,12 +89,12 @@ class TaskCard extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
+                begin: Alignment.topCenter,
                 end: Alignment.bottomRight,
                 // Subtle gradient based on status or just white/light grey
                 colors: [
-                  Colors.white,
-                  _getStatusColor().withOpacity(0.05), // Softer gradient
+                  Colors.white.withOpacity(0.6), // <-- Atur kecerahan atas (misal: 40%)
+                primaryColor.withOpacity(0.2)
                 ],
               ),
               borderRadius: BorderRadius.circular(16),

@@ -12,10 +12,6 @@ import '../widgets/filter_chips.dart';
 import '../widgets/task_card.dart';
 import '../utils/colors.dart'; // Import color constants
 
-// Konstanta warna dihapus dari sini karena sudah diimpor dari utils/colors.dart
-
-/// HomeView sebagai main screen aplikasi Student Task Tracker
-/// Menampilkan daftar tugas dengan filter, search, dan navigasi ke form tugas
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -25,17 +21,11 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
-  bool _isSearchActive = false; // <-- Logika baru untuk toggle logo
-
-  // Performance optimization: Debounced search
+  bool _isSearchActive = false;
   Timer? _searchDebounceTimer;
-
-  // Kontroler untuk animasi latar belakang bergerak
   late final AnimationController _gradientController;
   late final Animation<Alignment> _topAlignmentAnimation;
   late final Animation<Alignment> _bottomAlignmentAnimation;
-
-  // Focus node untuk accessibility navigation (dideklarasikan satu kali)
   late final FocusNode _searchFocusNode;
   final FocusNode _refreshButtonFocusNode = AccessibilityUtils.createFocusNode(
     debugLabel: 'Refresh Button',
@@ -43,22 +33,15 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   final FocusNode _fabFocusNode = AccessibilityUtils.createFocusNode(
     debugLabel: 'Floating Action Button',
   );
-
   Timer? _hintTimer;
   int _hintIndex = 0;
   bool _isDeletingHint = false;
   final String _baseHint = "Mana Tugas?";
   String _animatedHint = "";
-
-  // Kontroler untuk animasi FAB
   late final ScrollController _scrollController;
   bool _isFabVisible = true;
-
-  // Add animation controller for search bar width
   late final AnimationController _searchBarController;
   late final Animation<double> _searchBarWidthAnimation;
-
-  // Add search bar width and margin for animation
   double _searchBarWidthFraction = 0.75;
   EdgeInsets _searchBarMargin = const EdgeInsets.symmetric(
     vertical: 8,
@@ -74,10 +57,8 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
     _searchFocusNode.addListener(_onSearchFocusChange);
 
-    // Mulai animasi placeholder
     _startHintAnimation();
 
-    // Inisialisasi Kontroler Gradien Latar Belakang
     _gradientController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -93,7 +74,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       end: Alignment.bottomLeft,
     ).animate(_gradientController);
 
-    // Inisialisasi Kontroler Scroll FAB
     _scrollController = ScrollController();
     _scrollController.addListener(() {
       final direction = _scrollController.position.userScrollDirection;
@@ -104,7 +84,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       }
     });
 
-    // Animation controller for search bar expansion
     _searchBarController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -113,22 +92,19 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       CurvedAnimation(parent: _searchBarController, curve: Curves.easeOutExpo),
     );
 
-    // Set initial width and margin to push search bar to the left
     _searchBarWidthFraction = 0.75;
     _searchBarMargin = const EdgeInsets.symmetric(
       vertical: 8,
-      horizontal: 40, // Push search bar to the right by 40 logical pixels to not overlap the logo
-    ).copyWith(left: 64); // Push search bar to the left by 64 logical pixels to not overlap the logo
+      horizontal: 40,
+    ).copyWith(left: 64);
     _searchBarWidthFraction = 0.75;
     _searchBarMargin = const EdgeInsets.symmetric(vertical: 8, horizontal: 12);
 
-    // Announce screen load untuk screen readers
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AccessibilityUtils.announceMessage('Halaman daftar tugas dimuat');
     });
   }
 
-  // --- Logika untuk Animasi Placeholder ---
   void _startHintAnimation() {
     _hintTimer?.cancel();
     _hintIndex = 0;
@@ -142,7 +118,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   }
 
   void _updateHint(Timer timer) {
-    if (_isSearchActive) return; // Hentikan animasi jika sedang mengetik
+    if (_isSearchActive) return;
 
     setState(() {
       if (_isDeletingHint) {
@@ -169,9 +145,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       }
     });
   }
-  // --- Akhir Logika Animasi Placeholder ---
 
-  // --- Logika untuk Toggle Search/Logo ---
   void _onSearchFocusChange() {
     if (_searchFocusNode.hasFocus && !_isSearchActive) {
       _toggleSearch(true, Get.find<TaskController>());
@@ -183,7 +157,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh data ketika kembali ke halaman ini
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (Get.isRegistered<TaskController>()) {
         final taskController = Get.find<TaskController>();
@@ -194,15 +167,14 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // Performance optimization: Cancel debounce timer
-    _hintTimer?.cancel(); // Hentikan timer placeholder
-    _searchFocusNode.removeListener(_onSearchFocusChange); // Hapus listener
+    _hintTimer?.cancel();
+    _searchFocusNode.removeListener(_onSearchFocusChange);
     _searchFocusNode.dispose();
     _searchDebounceTimer?.cancel();
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _gradientController.dispose(); // Dispose gradient controller
-    _scrollController.dispose(); // Dispose scroll controller
+    _gradientController.dispose();
+    _scrollController.dispose();
     _refreshButtonFocusNode.dispose();
     _fabFocusNode.dispose();
     _searchBarController.dispose();
@@ -214,34 +186,42 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     final taskController = Get.find<TaskController>();
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      // Hapus backgroundColor dari Scaffold, biarkan Stack yang mengaturnya
+      // backgroundColor: Colors.white,
       appBar: _buildAppBar(taskController),
-      // Gunakan Stack untuk menempatkan latar belakang bergerak di belakang
       body: Stack(
         children: [
-          // Anda bisa menambahkan latar belakang bergerak di sini jika mau
-          // _buildAnimatedBackground(),
+          // Latar belakang gradien
+          Positioned.fill( // <-- PENTING: Membuat gradien mengisi seluruh Stack
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    primaryColor, // Atas (Biru Tua)
+                    Colors.white // Bawah (Putih)
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: const [0.0, 0.9], // Atur gradasi agar putih mulai lebih cepat
+                ),
+              ),
+            ),
+          ),
+          // Konten utama aplikasi (di atas gradien)
           AccessibilityUtils.createSemanticWidget(
             label: 'Daftar tugas utama',
             child: Column(
               children: [
-                // Modern header dengan statistik
                 _buildModernHeader(taskController),
-
-                // Filter chips dengan semantic label
                 AccessibilityUtils.createSemanticWidget(
                   label: 'Filter tugas',
-                  hint:
-                      'Pilih filter untuk menampilkan tugas berdasarkan status',
+                  hint: 'Pilih filter untuk menampilkan tugas berdasarkan status',
                   child: const FilterChips(),
                 ),
-
-                // Task list dengan semantic label
                 Expanded(
                   child: AccessibilityUtils.createSemanticWidget(
                     label: 'Daftar tugas',
                     child: Obx(() {
-                      // AnimatedSwitcher untuk transisi halus antar state
                       return AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
                         child: _buildTaskList(taskController),
@@ -258,7 +238,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build AppBar with animated logo and search bar
   PreferredSizeWidget _buildAppBar(TaskController controller) {
     Widget logoWidget = AnimatedScale(
       scale: _isSearchActive ? 0.0 : 1.0,
@@ -270,16 +249,14 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       ),
     );
 
-    // Calculate margin that will animate between states
-    EdgeInsets searchMargin = _isSearchActive 
-        ? const EdgeInsets.symmetric(vertical: 8, horizontal: 16) // Equal margins when active
-        : const EdgeInsets.only(top: 8, bottom: 8, left: 60, right: 16); // Tight to logo when inactive
+    EdgeInsets searchMargin = _isSearchActive
+        ? const EdgeInsets.symmetric(vertical: 8, horizontal: 16)
+        : const EdgeInsets.only(top: 8, bottom: 8, left: 60, right: 16);
 
-    // Calculate width including the space where logo was
     double screenWidth = MediaQuery.of(context).size.width;
     double searchBarWidth = _isSearchActive
-        ? screenWidth - 32 // Full width minus margins (16 each side)
-        : screenWidth * 0.75; // 75% width when inactive
+        ? screenWidth - 32
+        : screenWidth * 0.75;
 
     return PreferredSize(
       preferredSize: const Size.fromHeight(kToolbarHeight),
@@ -295,9 +272,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           child: Stack(
             alignment: Alignment.centerLeft,
             children: [
-              // Logo as background layer
               logoWidget,
-              // Search bar as top layer, will slide left to cover logo space
               AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.easeInOutCubic,
@@ -328,10 +303,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                           fontWeight: _isSearchActive
                               ? FontWeight.normal
                               : FontWeight.w500,
-                          height: 1.2, // Untuk vertical center
+                          height: 1.2,
                         ),
                         contentPadding: const EdgeInsets.symmetric(
-                          vertical: 18, // Lebih tinggi agar teks di tengah
+                          vertical: 18,
                           horizontal: 16,
                         ),
                       ),
@@ -360,13 +335,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Logika Debounce untuk search
   void _onSearchChanged(String query, TaskController controller) {
-    // Performance optimization: Debounced search
     _searchDebounceTimer?.cancel();
     _searchDebounceTimer = Timer(PerformanceUtils.searchDebounceDelay, () {
       controller.searchTasks(query);
-      // Announce search results untuk screen readers
       if (query.isNotEmpty) {
         Future.delayed(const Duration(milliseconds: 100), () {
           final resultCount = controller.filteredTasks.length;
@@ -378,7 +350,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     });
   }
 
-  /// Logika search submit
   void _performImmediateSearch(String query) {
     _searchDebounceTimer?.cancel();
     final taskController = Get.find<TaskController>();
@@ -389,40 +360,30 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build daftar tugas dengan ListView
   Widget _buildTaskList(TaskController controller) {
-    // Loading state
     if (controller.isLoading) {
       return _buildLoadingState();
     }
-
-    // Error state
     if (controller.errorMessage.isNotEmpty) {
       return _buildErrorState(controller);
     }
-
-    // Empty state
     if (controller.filteredTasks.isEmpty) {
       return _buildEmptyState(controller);
     }
-
-    // Task list
     return _buildTaskListView(controller);
   }
 
-  /// Build loading state
   Widget _buildLoadingState() {
-    // Gunakan Shimmer effect untuk loading state yang lebih premium
     return Shimmer.fromColors(
       key: const ValueKey('loading'),
       baseColor: Colors.grey[300]!,
       highlightColor: Colors.grey[100]!,
       child: ListView.builder(
-        itemCount: 5, // Tampilkan 5 skeleton card
+        itemCount: 5,
         itemBuilder: (context, index) {
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            height: 120, // Sesuaikan tinggi dengan TaskCard
+            height: 120,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
@@ -433,10 +394,9 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build error state
   Widget _buildErrorState(TaskController controller) {
     return Center(
-      key: const ValueKey('error'), // Key untuk AnimatedSwitcher
+      key: const ValueKey('error'),
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Semantics(
@@ -505,7 +465,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build empty state
   Widget _buildEmptyState(TaskController controller) {
     final isSearching = controller.searchQuery.isNotEmpty;
     final hasFilter = controller.currentFilter != TaskFilter.all;
@@ -513,7 +472,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     final subtitle = _getEmptyStateSubtitle(isSearching, hasFilter);
 
     return Center(
-      key: const ValueKey('empty'), // Key untuk AnimatedSwitcher
+      key: const ValueKey('empty'),
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Semantics(
@@ -631,10 +590,9 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build ListView untuk menampilkan daftar tugas
   Widget _buildTaskListView(TaskController controller) {
     return Semantics(
-      key: const ValueKey('list'), // Key untuk AnimatedSwitcher
+      key: const ValueKey('list'),
       label: 'Daftar ${controller.filteredTasks.length} tugas',
       hint: 'Geser ke bawah untuk muat ulang, ketuk tugas untuk edit',
       child: RefreshIndicator(
@@ -645,16 +603,12 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             'Daftar tugas berhasil dimuat ulang',
           );
         },
-        color: primaryColor, // Warna refresh indicator
+        color: primaryColor,
         child: AnimationLimiter(
-          // Tambahkan AnimationLimiter
           child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 90, top: 8), // Space for FAB
-            controller: _scrollController, // Tautkan scroll controller
+            padding: const EdgeInsets.only(bottom: 90, top: 8),
+            controller: _scrollController,
             itemCount: controller.filteredTasks.length,
-            // Performance optimization: Set estimated item extent for better scrolling
-            // itemExtent: PerformanceUtils.listItemExtent, // Hapus itemExtent untuk tinggi dinamis
-            // Performance optimization: Cache extent for smoother scrolling
             cacheExtent: PerformanceUtils.listCacheExtent,
             itemBuilder: (context, index) {
               final task = controller.filteredTasks[index];
@@ -662,10 +616,10 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                 position: index,
                 duration: const Duration(
                   milliseconds: 450,
-                ), // Sedikit lebih lambat
+                ),
                 child: SlideAnimation(
                   verticalOffset: 50.0,
-                  curve: Curves.easeOutExpo, // Efek "cepat-lambat" yang halus
+                  curve: Curves.easeOutExpo,
                   child: FadeInAnimation(
                     child: Semantics(
                       sortKey: OrdinalSortKey(index.toDouble()),
@@ -680,9 +634,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
                 ),
               );
             },
-            // Accessibility improvements untuk ListView
             semanticChildCount: controller.filteredTasks.length,
-            // Performance optimization: Add physics for better scrolling
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
@@ -692,7 +644,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build modern header dengan statistik tugas
   Widget _buildModernHeader(TaskController controller) {
     // Bungkus dengan AnimatedBuilder untuk gradien bergerak
     return AnimatedBuilder(
@@ -701,20 +652,27 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: _bottomAlignmentAnimation.value, // Gunakan animasi
-            colors: [
-              primaryColor.withOpacity(0.1), // Gunakan warna baru
-              primaryColorLight.withOpacity(0.1),
-            ],
-          ),
-          color: cardColor, // Fallback
+          // HAPUS: Gradasi biru transparan
+          // gradient: LinearGradient(
+          //   begin: Alignment.topLeft,
+          //   end: _bottomAlignmentAnimation.value, // Gunakan animasi
+          //   colors: [
+          //     primaryColor.withOpacity(0.1), // Gunakan warna baru
+          //     primaryColorLight.withOpacity(0.1),
+          //   ],
+          // ),
+          
+          // GANTI: Gunakan warna putih semi-transparan (efek "frosted glass")
+          color: Colors.white.withOpacity(0.7), // 40% Putih Transparan
+
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: primaryColor.withOpacity(0.2), width: 1.5),
+          
+          // HAPUS: Border biru
+          // border: Border.all(color: primaryColor.withOpacity(0.2), width: 1.5),
+          
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.1), // Tetap gunakan shadow hitam tipis
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -810,28 +768,24 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Build card statistik kecil
   Widget _buildStatCard(
     String label,
     String value,
     IconData icon,
     Color color,
   ) {
-    // Desain ulang agar lebih minimalis
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        // Hapus border untuk tampilan lebih bersih
-        // border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Column(
         children: [
           Text(
             value,
             style: TextStyle(
-              fontSize: 20, // Perbesar angka
+              fontSize: 20,
               fontWeight: FontWeight.bold,
               color: color,
             ),
@@ -840,16 +794,16 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 12), // Icon lebih kecil
+              Icon(icon, color: color, size: 12),
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  label, // <-- "Terlambat"
-                  textAlign: TextAlign.center, // Pusatkan jika wrap
+                  label,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11,
                     color: color.withOpacity(0.8),
-                    fontWeight: FontWeight.w600, // Pertegas label
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
                 ),
@@ -861,7 +815,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Get greeting message berdasarkan waktu
   String _getGreetingMessage() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
@@ -873,9 +826,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     }
   }
 
-  /// Build FloatingActionButton untuk menambah tugas
   Widget _buildFloatingActionButton() {
-    // Animasikan FAB saat scroll
     return AnimatedScale(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOutCubic,
@@ -885,7 +836,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withOpacity(0.4), // Shadow lebih kuat
+              color: primaryColor.withOpacity(0.4),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -905,7 +856,7 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
             focusNode: _fabFocusNode,
             onPressed: _navigateToAddTask,
             tooltip: AccessibilityUtils.addTaskButtonLabel,
-            backgroundColor: Colors.transparent, // Transparan untuk gradasi
+            backgroundColor: Colors.transparent,
             foregroundColor: Colors.white,
             elevation: 0,
             icon: const Icon(Icons.add, size: 24, semanticLabel: 'Tambah'),
@@ -919,7 +870,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Toggle search mode
   void _toggleSearch(bool activate, TaskController controller) {
     setState(() {
       _isSearchActive = activate;
@@ -949,7 +899,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     });
   }
 
-  /// Clear search
   void _clearSearch(TaskController controller) {
     _searchDebounceTimer?.cancel();
     _searchController.clear();
@@ -959,14 +908,11 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     );
   }
 
-  /// Navigate to add task screen
   void _navigateToAddTask() {
     AccessibilityUtils.announceMessage('Membuka form tambah tugas');
-    // Hapus parameter 'transition'
     Get.toNamed(AppRoutes.addTask);
   }
 
-  /// Navigate to edit task screen
   void _navigateToEditTask(String taskId) {
     final taskController = Get.find<TaskController>();
     final task = taskController.getTaskById(taskId);
@@ -975,7 +921,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
       AccessibilityUtils.announceMessage(
         'Membuka form edit tugas ${task.title}',
       );
-      // Hapus parameter 'transition'
       Get.toNamed(AppRoutes.editTask, arguments: task);
     } else {
       AccessibilityUtils.announceMessage('Error: Tugas tidak ditemukan');
@@ -989,7 +934,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     }
   }
 
-  /// Delete task (dipanggil oleh TaskCard)
   Future<void> _handleDeleteTask(
     TaskController controller,
     String taskId,
@@ -1024,7 +968,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     }
   }
 
-  /// Get empty state title berdasarkan kondisi
   String _getEmptyStateTitle(bool isSearching, bool hasFilter) {
     if (isSearching) {
       return 'Tidak Ada Hasil';
@@ -1035,7 +978,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     }
   }
 
-  /// Get empty state subtitle berdasarkan kondisi
   String _getEmptyStateSubtitle(bool isSearching, bool hasFilter) {
     if (isSearching) {
       return 'Tidak ditemukan tugas yang sesuai dengan pencarian Anda. Coba gunakan kata kunci yang berbeda.';
@@ -1046,3 +988,6 @@ class _HomeViewState extends State<HomeView> with TickerProviderStateMixin {
     }
   }
 }
+
+
+
